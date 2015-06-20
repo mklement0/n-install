@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+# ---
+# IMPORTANT: Use the following statement at the TOP OF EVERY TEST SCRIPT
+#            to ensure that this package's 'bin/' subfolder is added to the path so that
+#            this package's CLIs can be invoked by their mere filename in the rest
+#            of the script.
+# ---
+PATH=${PWD%%/test*}/bin:$PATH
+
+# Helper function for error reporting.
+die() { (( $# > 0 )) && echo "ERROR: $*" >&2; exit 1; }
+
+# !! Since n-install will categorically refuse to run with a `n`, `npm`, `node` or `iojs` 
+# !! executables in the $PATH, we must remove that executable's directory from the $PATH beforehand.
+PATH=$(./.fixtures/getNoNodePath)
+
+# Create a temp. dir...
+tmpDir=$(mktemp -d -t XXXX) # Works on both OSX and Linux; note: dir. name will have random extension on OSX (e.g., '.../XXXX.bJViLcM3') and none on Linux (e.g., '.../vXDA')
+trap 'rm -rf "$tmpDir"' EXIT # Set up exit trap to automatically clean up the temp dir.
+
+# ... and create a dummy file in it.
+touch "$tmpDir/someFile" || die
+
+stdErrOutput=$(N_PREFIX="$tmpDir" n-install -t 2>&1 >/dev/null) && die "Unexpectedly didn't fail with N_PREFIX pointing to a non-empty directory."
+
+[[ $stdErrOutput =~ 'not'[[:space:]]+'empty' ]] ||  die "Didn't fail with already-installed error message; stderr output was:"$'\n'"$stdErrOutput"
+
+exit 0

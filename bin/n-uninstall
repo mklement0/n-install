@@ -1,0 +1,390 @@
+#!/usr/bin/env bash
+
+#
+# Script-global constants
+# 
+
+##### IMPORTANT: These names must be kept in sync with the master copies in 'n-install'.
+kINSTALLER_NAME='n-install' # The name of the script that installed n.
+kTHIS_REPO_URL='http://git.io/n-install-repo' # This script's source repository.
+kPREFIX_DIR=${N_PREFIX:-$HOME/n} # The target prefix directory, inside which both a dir. for n itself and the active node version's dirs. will be located.
+## For updating the relevant shell initialization file:
+kINIT_FILE_LINE_ID=" # Added by $kINSTALLER_NAME (see $kTHIS_REPO_URL)." # The string that identifies the line added by us.
+##### 
+
+kTHIS_NAME=$(basename "$0")
+
+# Exit codes reported by cleanUpShellInitFile()
+kEC_UNSUPPORTED_SHELL=4
+kEC_INIT_FILE_NOT_FOUND=5
+kEC_LINE_NOT_FOUND=6
+
+# 
+# BEGIN: Helper functions
+#
+
+# SYNOPSIS
+#   echoColored colorNum [text...]
+# DESCRIPTION
+#   Prints input in the specified color, which must be an ANSI color code (e.g., 31 for red).
+#   Input is either provided via the TEXT operands, or, in their absence, from stdin.
+#   If input is provided via TXT operands, a trailing \n is added.
+#   NOTE: 
+#     - Unlike echo, uses stdin, if no TEXT arguments are specified; you MUST either specify
+#       at least one input operand OR stdin input; in that sense, this function is like a hybrid
+#       between echo and cat. However, *interactive* stdin input makes no sense, and therefore
+#       a newline is simply printed - as with echo without arguments - if stdin is connected to
+#       a terminal and neither operands nor stdin input is provided.
+#     - Coloring is suppressed, if the variable kNO_COLOR exists and is set to 1.
+#       An invoking script may set this in case output is NOT being sent to a terminal.
+#       (E.g., test -t 1 || kNO_COLOR=1)
+# EXAMPLES
+#   echoColored 31 "I'm red"
+#   cat file | echoColored 32 # file contents is printed in green
+echoColored() {
+  local pre="\033[${1}m" post='\033[0m'
+  (( kNO_COLOR )) && { pre= post=; }
+  shift # skip the color argument
+  if (( $# )); then
+    printf "${pre}%s${post}\n" "$*"
+  else
+    [[ -t 0 ]] && { printf '\n'; return; } # no interactive stdin input
+    printf "$pre"; cat; printf "$post"
+  fi  
+}
+
+# SYNOPSIS
+#   dieSyntax [msg|-]
+# DESCRIPTION
+#   Prints a red error message to stderr and exits with exit code 2, meant to indicate a 
+#   syntax problem (invalid arguments).
+#   A standard message is provided, if no arguments are given.
+#   If the first (and only) argument is '-', input is taken from stdin; otherwise, the 
+#   first argument specifies the message to print.
+#   Either way, a preamble with this script's name and the type of message is printed.
+# NOTES
+#   Uses echoColored(), whose coloring may be suppressed with kNO_COLOR=1.
+dieSyntax() { 
+  local kPREAMBLE="$kTHIS_NAME: ARGUMENT ERROR:"
+  if [[ $1 == '-' ]]; then # from stdin
+    { 
+      printf '%s\n' "$kPREAMBLE"
+      sed 's/^/  &/'
+    } | echoColored 31 # red
+  else # from operands
+    echoColored 31 "$kPREAMBLE: ${1:-"Invalid argument(s) specified."} Use -h for help."
+  fi
+  exit 2
+} >&2
+
+# SYNOPSIS
+#   die [msg|- [exitCode]]
+# DESCRIPTION
+#   Prints a red error message to and by default exits with exit code 1, meant to indicate
+#   a runtime problem.
+#   A standard message is provided, if no arguments are given.
+#   If the first (and only) argument is '-', input is taken from stdin; otherwise, the 
+#   first argument specifies the message to print.
+#   Either way, a preamble with this script's name and the type of message is printed.
+# NOTES
+#   Uses echoColored(), whose coloring may be suppressed with kNO_COLOR=1.
+die() { 
+  local kPREAMBLE="$kTHIS_NAME: ERROR:"
+  if [[ $1 == '-' ]]; then # from stdin
+    { 
+      printf '%s\n' "$kPREAMBLE"
+      sed 's/^/  &/'
+    } | echoColored 31 # red
+  else # from operands
+    echoColored 31 "$kPREAMBLE ${1:-"ABORTING due to unexpected error."}"
+  fi
+  exit ${2:-1}
+} >&2
+
+# SYNOPSIS
+#   warn [msg|-]
+# DESCRIPTION
+#   Prints a yellow warning message to stderr.
+#   If the first (and only) argument is '-', input is taken from stdin; otherwise, the 
+#   first argument specifies the message to print.
+#   Either way, a preamble with this script's name and the type of message is printed.
+# NOTES
+#   Uses echoColored(), whose coloring may be suppressed with kNO_COLOR=1.
+warn() {
+  local kPREAMBLE="$kTHIS_NAME: WARNING:"
+  [[ $1 == '-' ]] && shift # for consistency with die() and dieSyntax(), accept '-' as an indicator that stdin input should be used.
+  if (( $# == 0 )); then # from stdin
+    { 
+      printf '%s\n' "$kPREAMBLE"
+      sed 's/^/  &/'
+    } | echoColored 33 # yellow
+  else # from operands
+    echoColored 33 "$kPREAMBLE $*"
+  fi
+} >&2
+
+# SYNOPSIS
+#   cleanUpShellInitFile [-t]
+# DESCRIPTION
+#   Removes the line that n-install placed in the relevant initialization file 
+#   for the current user's shell.
+#
+#   Specify -t to only test (examine) the initialization file, without
+#   modifying it.
+#
+#   Output is the N_PREFIX value contained in the line, if found.
+#
+#   Exit codes:
+#     0 ... success
+#     $kEC_UNEXPECTED_ERR ... unexpected error, such as failing to update the file of interest
+#     $kEC_UNSUPPORTED_SHELL ... the shell specified in $SHELL is unsupported
+#     $kEC_INIT_FILE_NOT_FOUND ... the shell initialization file doesn't exist
+#     $kEC_LINE_NOT_FOUND ... no line added by n-install found
+cleanUpShellInitFile() {
+
+  local testOnly=0 line initFile existingLine initFileContents
+
+  [[ $1 == '-t' ]] && { testOnly=1; shift; }
+  (( $# == 0 )) || return 2
+
+  # Determine the shell-specific initialization file.
+  if [[ -n $INSTALL_N_TEST_OVERRIDE_SHELL_INIT_FILE ]]; then # override for testing
+      initFile=$INSTALL_N_TEST_OVERRIDE_SHELL_INIT_FILE
+  else
+    case "$(basename -- "$SHELL")" in
+      'bash')
+        # !! Sadly, bash ONLY reads ~/.bash_profile in LOGIN shells, and on OSX (Darwin) ALL shells are login shells, so on OSX we must target ~/.bash_profile.
+        [[ $(uname) == 'Darwin' ]] && initFile=~/.bash_profile || initFile=~/.bashrc
+        ;;
+      'ksh')
+        initFile=~/.kshrc
+        ;;
+      'zsh')
+        initFile=~/.zshrc
+        ;;
+      *) 
+        return $kEC_UNSUPPORTED_SHELL
+        ;;
+    esac
+  fi
+
+  [[ -f $initFile ]] || return $kEC_INIT_FILE_NOT_FOUND
+
+  # Get the line to remove, so we can parse it.
+  # Note that we only retrieve the last one, should there be multiple
+  # (unexpectedly), but later we'll remove *all* of them.
+  existingLine=$(grep -F "$kINIT_FILE_LINE_ID" -- "$initFile" | tail -n 1)
+
+  [[ -n $existingLine ]] || return $kEC_LINE_NOT_FOUND
+
+  # To avoid tricky parsing, we simply eval the line in a subshell and
+  # output the resulting N_PREFIX value; note that, hypothetically, this
+  # could break. We do use the same, Bash-compatible code in n-install
+  # for all supported shells, however.
+  (N_PREFIX=; eval "$existingLine" &>/dev/null; printf '%s\n' "$N_PREFIX")
+
+  # Remove the line from the init file.
+  if (( ! testOnly )); then
+    initFileContents=$(grep -Fv "$kINIT_FILE_LINE_ID" -- "$initFile") || die
+    printf '%s\n' "$initFileContents" >"$initFile" || { echo "Aborting, because shell initialization file '$initFile' could not be updated." >&2; return 1; }
+  fi
+
+  return 0
+}
+
+# 
+# END: Helper functions
+#
+
+unset CDPATH  # to prevent unpredictable `cd` behavior
+
+# Output version number and exit, if requested. Note that the `ver='...'` statement is automatically updated by `make version VER=<newVer>` - DO keep the 'v' suffix in the variable _definition_.
+[ "$1" = '--version' ] && { ver='v0.0.1'; echo "$kTHIS_NAME ${ver#v}"; exit 0; }
+
+# Command-line help.
+if [ "$1" = '--help' ] || [ "$1" = '-h' ]; then
+  cat <<EOF
+SYNOPSIS
+  $kTHIS_NAME [-y]
+
+DESCRIPTION
+  Uninstalls n, the Node.js version manager, assuming it was originally
+  installed with $kINSTALLER_NAME.
+
+  CAUTION: n, along with all its Nodej.js and io.js versions is REMOVED.
+
+  n is expected to be located in:
+
+    \${N_PREFIX}
+
+  whose current value is:
+
+    ${N_PREFIX}
+
+  For safety reasons, the uninstallation is only performed if the expected
+  modifications performed by $kINSTALLER_NAME are found in the current user's
+  shell initialization file.
+  Otherwise, manual uninstallation instructions are provided, including for
+  shells that $kINSTALLER_NAME didn't support.
+
+  Options:
+
+    -y
+      USE WITH CAUTION: Skips the confirmation prompt and uninstalls
+      instantly.
+
+  For more information, see $kTHIS_REPO_URL
+
+EOF
+    exit 0
+fi
+
+# Process options.
+skipPrompt=0
+while getopts ':y' opt; do
+  [[ $opt == '?' ]] && dieSyntax "Unknown option: -$OPTARG"
+  [[ $opt == ':' ]] && dieSyntax "Option -$OPTARG is missing its argument."  
+  case "$opt" in
+    y)
+      skipPrompt=1
+      ;;
+    *)
+      die "DESIGN ERROR: option -$opt not handled."
+      ;;
+  esac
+done
+shift $((OPTIND - 1)) # Skip the already-processed arguments (options).
+
+# Make sure that not too many arguments were specified.
+(( $# == 0 )) || dieSyntax "Unexpected argument(s) specified."
+
+# Examine the relevant shell initialization file and capture the N_PREFIX
+# value defined there.
+vN_PREFIX_FROM_INIT_FILE=$(cleanUpShellInitFile -t)
+ec=$?
+
+# pv ec vN_PREFIX_FROM_INIT_FILE
+
+# If an error (other than an unexpected one) occurred, see if we can find
+# ANY traces of our installation, and exit with a warning, if we can't.
+# If we either find N_PREFIX defined or directory $kPREFIX_DIR in existence,
+# we assume we're dealing with either an unsupported shell or a corrupted
+# installation, and fail below with specific recommendations.
+(( ec > 1 )) && [[ -z $N_PREFIX && ! -d $kPREFIX_DIR ]] && { echo "WARNING: It looks like n is either not installed or wasn't installed with $kINSTALLER_NAME; nothing to do." >&2; exit 0; }
+
+# Decide if we can  go ahead with the uninstallation.
+case $ec in
+  0)
+    : # everything OK, proceed below
+    ;;
+  $kEC_UNSUPPORTED_SHELL)
+    warn - <<EOF
+MANUAL UNINSTALLATION NEEDED
+
+Because the initialization file for your shell ($SHELL) was not 
+supported for automatic modification by $kINSTALLER_NAME, you must uninstall
+MANUALLY, to be safe:
+
+ - Remove the N_PREFIX environment-variable definition and associated PATH
+   modification from your shell's initialization file.
+
+ - Remove the directory that N_PREFIX points to, which is:
+     $N_PREFIX
+   Note: 
+    - Be sure that that directory contains no unrelated content you may
+      want to preserve.
+    - If \$N_PREFIX is not defined, look in the default installation location,
+      $kPREFIX_DIR
+EOF
+    exit $ec
+    ;;
+  $kEC_INIT_FILE_NOT_FOUND)
+    warn - <<EOF
+MANUAL UNINSTALLATION NEEDED
+
+The initialization file for your shell ($SHELL) was unexpectedly not found.
+
+You must uninstall MANUALLY:
+
+ - Remove the directory that N_PREFIX points to, which is:
+
+     $N_PREFIX
+
+   Note: 
+    - Be sure that that directory contains no unrelated content you may
+      want to preserve.
+    - If \$N_PREFIX is not defined, look in the default installation location,
+      $kPREFIX_DIR
+
+ - If a different shell was your default shell when you installed with
+   $kINSTALLER_NAME, manually edit that shell's initialization file to
+   remove the N_PREFIX environment-variable definition and associated PATH
+   modification.
+EOF
+    exit $ec
+    ;;
+  $kEC_LINE_NOT_FOUND)
+    warn - <<EOF
+MANUAL UNINSTALLATION NEEDED
+
+The initialization file for your shell ($SHELL) does not contain the expected
+modifications made by $kINSTALLER_NAME. 
+
+You must uninstall MANUALLY.
+
+ - If a different shell was your default shell when you installed with
+   $kINSTALLER_NAME, manually edit that shell's initialization file to
+   remove the N_PREFIX environment-variable definition and associated PATH
+   modification.
+
+ - Remove the directory that N_PREFIX points to, which is:
+
+     $N_PREFIX
+
+   Note: 
+    - Be sure that that directory contains no unrelated content you may
+      want to preserve.
+    - If \$N_PREFIX is not defined, look in the default installation location,
+      $kPREFIX_DIR
+
+EOF
+    exit $ec
+    ;;
+  *) # unexpected error
+    die
+    ;;
+esac
+
+# Prompt for confirmation.
+if (( ! skipPrompt )); then
+  cat <<EOF
+====
+You are ABOUT TO UNINSTALL n, the Node.js version manager,
+which includes REMOVAL of the following directory:
+
+  $vN_PREFIX_FROM_INIT_FILE
+
+For more information, see $kTHIS_REPO_URL
+====
+EOF
+  while :; do
+    read -ep "CONTINUE (y/N)? " response
+    [[ $response =~ ^[yY]$ ]] && break # confirmed
+    [[ $response =~ ^[nN]$ || -z $response ]] && { echo "Aborted." 1>&2; exit 3; }
+    echo "Invalid input; please try again (^C to abort)." 1>&2
+  done
+fi
+
+# Clean up the shell initialization file.
+cleanUpShellInitFile >/dev/null || die
+
+# Remove the directory.
+if [[ -d $vN_PREFIX_FROM_INIT_FILE ]]; then
+  rm -rf "$vN_PREFIX_FROM_INIT_FILE" || die
+elif [[ -z $vN_PREFIX_FROM_INIT_FILE ]]; then
+  warn -  <<<"The location of the installation dir. could not be derived from"$'\n'"the shell-initialization file. No files were removed."
+else
+  warn - <<<"Installation dir. '$vN_PREFIX_FROM_INIT_FILE' does not exist (anymore)."$'\n'"No files were removed."
+fi
+
+echo "-- n successfully uninstalled from '$vN_PREFIX_FROM_INIT_FILE'."

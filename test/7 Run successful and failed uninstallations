@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+
+# ---
+# IMPORTANT: Use the following statement at the TOP OF EVERY TEST SCRIPT
+#            to ensure that this package's 'bin/' subfolder is added to the path so that
+#            this package's CLIs can be invoked by their mere filename in the rest
+#            of the script.
+# ---
+PATH=${PWD%%/test*}/bin:$PATH
+
+# Helper function for error reporting.
+die() { (( $# > 0 )) && echo "ERROR: $*" >&2; exit 1; }
+
+dieNotFound() { echo "ERROR: $descr: not found or not executable in '$tmpDir': '$f'" >&2; exit 1; }
+
+runUninstall() {
+  # Note the INSTALL_N_TEST_OVERRIDE_* override.
+  INSTALL_N_TEST_OVERRIDE_SHELL_INIT_FILE="$tmpInitFile" n-uninstall "$@"
+}
+
+# !! Since n-install will categorically refuse to run with a `node` executable in the $PATH,
+# !! we must remove that executable's directory from the $PATH beforehand.
+PATH=$(./.fixtures/getNoNodePath)
+
+#### !! Must be kept in sync with master copies in 'n-install'.
+kINSTALLER_NAME='n-install' # The name of the script that installed n.
+kTHIS_REPO_URL='http://git.io/n-install-repo' # This script's source repository - SHORT, git.io-based form.
+kTHIS_REPO_URL_LONG='https://github.com/mklement0/n-install' # This script's source repository in LONG form - needed for deriving raw.githubusercontent.com URLs from it.
+kINIT_FILE_LINE_ID=" # Added by $kINSTALLER_NAME (see $kTHIS_REPO_URL)." # The string that identifies the line added by us.
+#### 
+
+# Create a temp. dir.
+tmpDir=$(mktemp -d -t XXXX) # Works on both OSX and Linux; note: dir. name will have random extension on OSX (e.g., '.../XXXX.bJViLcM3') and none on Linux (e.g., '.../vXDA')
+tmpPrefixDir="$tmpDir/n"
+tmpInitFile="$tmpDir/initFile"
+
+# Define the shell-init test files to use.
+# NOTE: The *1*-based indices of the arrays must match the `case` handlers below.
+initFiles=(     ./.fixtures/shellInitFile-ownEntry ./.fixtures/shellInitFile-ownEntry ./.fixtures/shellInitFile-ownEntry ./.fixtures/shellInitFile-multipleOwnEntries ./.fixtures/shellInitFile-noentry     ./.fixtures/shellInitFile-foreignEntry  )
+descriptions=(  'interactive - confirmed'          'interactive - declined'           'own entry'                        'multiple own entries'                       'no own entry'                        'foreign entry'                         )
+
+i=0
+for initFile in "${initFiles[@]}"; do
+  
+  descr="${descriptions[i++]}"
+  
+  # Create a dummy file and subdirs to test if they get in the way of removing $tmpPrefixDir.
+  mkdir -p "$tmpPrefixDir/dummyDir" || die
+  touch "$tmpPrefixDir/dummyFile" || die
+
+  case $i in
+    1|2|3|4)
+      # Patch the initialization file copy to point N_PREFIX to "$tmpPrefixDir", so that the uninstaller removes the latter.
+      sed "s#\(N_PREFIX=\)[^;]*;#\1'${tmpPrefixDir}';#" "$initFile" > "$tmpInitFile" 
+      diff "$initFile" "$tmpInitFile" >/dev/null && die "TEST DESIGN: $descr: Patching '$tmpInitFile' failed unexpectedly."
+      ;;
+    *) # Nothing to patch by definition.
+      cp "$initFile" "$tmpInitFile" || die
+      ;;
+  esac
+
+  # Run the uninstaller.
+  case $i in
+    1) # simulated interactive uninstall - confirmed
+      stdErrOutput=$(runUninstall <<<'y' 2>&1 >/dev/null)
+      ;;
+    2) # simulated interactive uninstall - declined
+      stdErrOutput=$(runUninstall <<<'n' 2>&1 >/dev/null)
+      ;;
+    *) # unattended
+      stdErrOutput=$(runUninstall -y 2>&1 >/dev/null)
+      ;;
+  esac
+
+  ec=$?
+
+  epilogue=" Tmp dir: '$tmpDir'; init file '$initFile' -> '$tmpInitFile'; stderr output:"$'\n'"$stdErrOutput"
+
+  case $i in
+    2)  # declined interactive install
+      (( ec != 0 )) || die "$descr: Unexpectedly reported exit code $ec. $epilogue"
+      ;;
+    1|3|4) # init file with expected entry (both confirmed and unattended install): should succeed, remove entry from the init file, and remove "$tmpPrefixDir"
+      (( ec == 0 )) || die "$descr: Unexpectedly reported exit code $ec. $epilogue"
+      fgrep -q "$kINIT_FILE_LINE_ID" "$tmpInitFile" && die "$descr: Init file still contains '$kINIT_FILE_LINE_ID'. $epilogue"
+      [[ ! -e "$tmpPrefixDir" ]] || die "$descr: Prefix dir still exists. $epilogue"
+      ;;
+    5|6) # init files without expected entry: should not succeed, and should keep "$tmpPrefixDir"
+      (( ec > 1 )) || die "$descr: Unexpectedly reported exit code $ec. $epilogue"
+       [[ -e "$tmpPrefixDir" ]] || die "$descr: Prefix dir unexpectedly removed. $epilogue"
+      ;;
+    *)
+      die "TEST-DESIGN ERROR: missing 'case' branch handler."
+      ;;
+  esac
+
+done
+
+rm -rf "$tmpDir"
+
+exit 0

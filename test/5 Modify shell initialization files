@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+
+# ---
+# IMPORTANT: Use the following statement at the TOP OF EVERY TEST SCRIPT
+#            to ensure that this package's 'bin/' subfolder is added to the path so that
+#            this package's CLIs can be invoked by their mere filename in the rest
+#            of the script.
+# ---
+PATH=${PWD%%/test*}/bin:$PATH
+
+# Helper function for error reporting.
+die() { (( $# > 0 )) && echo "ERROR: $*" >&2; exit 1; }
+
+dieNotFound() { echo "ERROR: $descr: not found or not executable in '$tmpDir': '$f'" >&2; exit 1; }
+
+runInstall() {
+  # Note the INSTALL_N_TEST_OVERRIDE_* override and installing without a default node installation.
+  N_PREFIX="$tmpPrefixDir" INSTALL_N_TEST_OVERRIDE_SHELL_INIT_FILE="$tmpInitFile" n-install -y - 
+}
+
+cleanUp() {
+  if (( keepInitFile )); then
+    rm -rf "$tmpPrefixDir"
+  else
+    rm -rf "$tmpDir"
+  fi
+}
+
+#### !! Must be kept in sync with master copies in 'n-install'.
+kINSTALLER_NAME='n-install' # The name of the script that installed n.
+kTHIS_REPO_URL='http://git.io/n-install-repo' # This script's source repository.
+kINIT_FILE_LINE_ID=" # Added by $kINSTALLER_NAME (see $kTHIS_REPO_URL)." # The string that identifies the line added by us.
+#### 
+
+# !! Since n-install will categorically refuse to run with a `node` executable in the $PATH,
+# !! we must remove that executable's directory from the $PATH beforehand.
+PATH=$(./.fixtures/getNoNodePath)
+
+# Create a temp. dir.
+tmpDir=$(mktemp -d -t XXXX) # Works on both OSX and Linux; note: dir. name will have random extension on OSX (e.g., '.../XXXX.bJViLcM3') and none on Linux (e.g., '.../vXDA')
+tmpPrefixDir="$tmpDir/n"
+tmpInitFile="$tmpDir/initFile"
+
+trap 'cleanUp' EXIT # Set up exit trap to automatically clean up the temp dir. and file.
+
+initFiles=(     ./.fixtures/shellInitFile-noentry    ./.fixtures/shellInitFile-ownEntry ./.fixtures/shellInitFile-foreignEntry ./.fixtures/shellInitFile-multipleEntries )
+descriptions=( 'no preexisting entries'              'old own entry'                    'foreign entry'                        'multiple preexisting entries' )
+
+i=0
+for initFile in "${initFiles[@]}"; do
+  
+  descr="${descriptions[i++]}"
+  
+  (shopt -s dotglob; rm -rf "$tmpDir"/*)
+
+  cp "$initFile" "$tmpInitFile" || die
+
+  stdErrOutput=$(runInstall 2>&1 >/dev/null)
+  ec=$?
+
+  epilogue="'$initFile' -> '$tmpInitFile'; stderr output:"$'\n'"$stdErrOutput"
+
+  keepInitFile=1
+
+  case $i in
+    1|2) # should succeed, and entry should be added / replaced (though not necessarily in the same spot)
+      # Note: We compare via command substitutions, because they trim trailing newlines and thus remove inconsequential differences in trailing empty lines.
+      (( ec == 0 )) || die "$descr: unexpected exit code $ec. $epilogue"
+      fgrep -q "$tmpPrefixDir" "$tmpInitFile" || die "$descr: target dir path not found in updated init file. $epilogue"
+      (( i == 2 )) && { (( $(fgrep -c "$kINIT_FILE_LINE_ID" "$tmpInitFile") == 1 )) || die "$descr: not (just) 1 entry found in updated init file. $epilogue"; }
+      ;;
+    3) # should fail due to foreign entry
+      (( ec != 0 )) || die "$descr: unexpected exit code $ec. $epilogue"
+       [[ $stdErrOutput =~ 'someone'[[:space:]]+'else' ]] || die "$descr: error message is missing 'someone-else' passage. $epilogue"
+      ;;
+    4) # should fail due to multiple entries
+      (( ec != 0 )) || die "$descr: unexpected exit code $ec. $epilogue"
+      [[ $stdErrOutput =~ 'multiple' ]] || die "$descr: error message is missing 'multiple' passage. $epilogue"
+      ;;
+    *)
+      die "TEST-DESIGN ERROR: missing 'case' branch handler."
+      ;;
+  esac
+  
+  keepInitFile=0
+
+done
+
+exit 0

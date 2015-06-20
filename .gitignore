@@ -1,0 +1,9 @@
+
+# npm's debug files, created when something goes wrong.
+npm-debug.log
+
+# npm modules
+node_modules/
+
+# urchin log files
+.urchin.log

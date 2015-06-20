@@ -1,0 +1,129 @@
+#!/usr/bin/env bash
+
+# ---
+# IMPORTANT: Use the following statement at the TOP OF EVERY TEST SCRIPT
+#            to ensure that this package's 'bin/' subfolder is added to the path so that
+#            this package's CLIs can be invoked by their mere filename in the rest
+#            of the script.
+# ---
+PATH=${PWD%%/test*}/bin:$PATH
+
+# Helper function for error reporting.
+die() { (( $# > 0 )) && echo "ERROR: $*" >&2; exit 1; }
+
+dieNotFound() { echo "ERROR: $descr: not found or not executable in '$tmpDir': '$f'" >&2; exit 1; }
+dieUnexpectedlyFound() { echo "ERROR: $descr: did not expect to find in '$tmpDir': '$f'" >&2; exit 1; }
+
+runInstall() {
+  # Pass the shell initialization file using INSTALL_N_TEST_OVERRIDE_PREFIX_DIR as an override.
+  N_PREFIX="$tmpPrefixDir" INSTALL_N_TEST_OVERRIDE_SHELL_INIT_FILE="$tmpDir/initFile" n-install "$@"
+}
+
+runUpdate() {
+  N_PREFIX="$tmpPrefixDir" n-update "$@"
+}
+
+#### !! Must be kept in sync with master copies in 'n-install'.
+kTHIS_REPO_URL_LONG='https://github.com/mklement0/n-install' # This script's source repository in LONG form - needed for deriving raw.githubusercontent.com URLs from it.
+#### 
+
+# !! Since n-install will categorically refuse to run with a `node` executable in the $PATH,
+# !! we must remove that executable's directory from the $PATH beforehand.
+PATH=$(./.fixtures/getNoNodePath)
+
+# Create a temp. dir.
+tmpDir=$(mktemp -d -t XXXX) # Works on both OSX and Linux; note: dir. name will have random extension on OSX (e.g., '.../XXXX.bJViLcM3') and none on Linux (e.g., '.../vXDA')
+tmpPrefixDir="$tmpDir/n"
+
+# ----------- INSTALLATION
+
+for i in {1..6}; do
+  
+  (shopt -s dotglob; rm -rf "$tmpDir"/*)
+
+  descr= ok=0 nodeShouldInstall=0 iojsShouldInstall=0
+  case $i in
+    1) # with invalid simulated user input
+      runInstall <<<'z' && { rm -rf "$tmpDir"; die "Installation succeeded despite invalid simulated user input."; }
+      continue
+      ;;
+    2) # with simulated user input that declines the confirmation prompt
+      runInstall <<<'n' && { rm -rf "$tmpDir"; die "Installation succeeded despite simulated user input that declined the confirmation prompt."; }
+      continue
+      ;;
+    3) # with simulated user input and defaults
+      descr='simulated user input: n + latest node'
+      runInstall <<<$'y' && ok=1
+      nodeShouldInstall=1
+      ;;
+    3) # unattended installation
+      descr='unattended: n + latest node'
+      runInstall -y && ok=1
+      nodeShouldInstall=1
+      ;;
+    4) # unattended installation w/o any Node.js/io.js versions
+      descr='unattended: n only'
+      runInstall -y - && ok=1
+      nodeShouldInstall=0
+      ;;
+    5) # unattended installation latest stable Node.js and latest io.js version.
+      descr='unattended: n + stable Node.js + latest io.js'
+      runInstall -y stable io:latest && ok=1
+      nodeShouldInstall=1
+      iojsShouldInstall=1
+      ;;
+    6) # unattended installation FROM GITHUB
+      descr='unattended: default FROM GITHUB (will not succeed if not yet pushed)'
+      N_PREFIX="$tmpPrefixDir" INSTALL_N_TEST_OVERRIDE_SHELL_INIT_FILE="$tmpDir/initFile" bash <(curl -L "${kTHIS_REPO_URL_LONG/\/\/github.com\////raw.githubusercontent.com/}/master/bin/n-install") -y - && ok=1
+      nodeShouldInstall=0
+      ;;
+    *)
+      die "TEST-DESIGN ERROR: missing 'case' branch handler."
+      ;;
+  esac
+
+  (( ok )) || die "Installation failed unexpectedly: $descr; inspect the target dir.: '$tmpDir'"
+
+  # Spot-check for crucial files and dirs:
+
+  # n's files and helper scripts
+  f='n/.repo/.git'; [[ -d $tmpPrefixDir/$f ]] || dieNotFound
+  f='bin/n'; [[ -x $tmpPrefixDir/$f ]] || dieNotFound
+
+  # helper scripts
+  for f in 'bin/n-update' 'bin/n-uninstall'; do
+    [[ -x $tmpPrefixDir/$f ]] || dieNotFound
+  done
+
+  # Node.js executables
+  for f in 'bin/node' 'bin/npm'; do
+    [[ -x $tmpPrefixDir/$f ]] && { if (( ! nodeShouldInstall )); then dieUnexpectedlyFound; fi; } || { if (( nodeShouldInstall )); then dieNotFound; fi; }
+  done
+  # io.js executables (note that iojs installs the Node.js executables PLUS 'iojs')
+  for f in 'bin/iojs'; do
+    [[ -x $tmpPrefixDir/$f ]] && { if (( ! iojsShouldInstall )); then dieUnexpectedlyFound; fi; } || { if (( iojsShouldInstall )); then dieNotFound; fi; }
+  done
+
+done
+
+# ----------- UPDATING N
+
+# Note: We assume that "$tmpDir" contains a working installation now.
+
+for i in {1..3}; do
+  case $i in
+    1) # with invalid simulated user input
+      runUpdate <<<'z' && { rm -rf "$tmpDir"; die "n-update succeeded despite invalid simulated user input."; }
+      ;;
+    2) # with simulated user input that declines the confirmation prompt
+      runUpdate <<<'n' && { rm -rf "$tmpDir"; die "n-update succeeded despite simulated user input that declined the confirmation prompt."; }
+      ;;
+    3) # unattended
+      runUpdate -y || { rm -rf "$tmpDir"; die "n-update -y failed unexpectedly."; }
+      ;;
+  esac
+done
+
+rm -rf "$tmpDir"
+
+exit 0

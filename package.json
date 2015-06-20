@@ -1,0 +1,51 @@
+{
+  "name": "n-install",
+  "description": "installs n, the Node.js version manager, without needing to install Node.js first",
+  "private": true,
+  "version": "0.0.1",
+  "os": [
+    "darwin",
+    "linux"
+  ],
+  "preferGlobal": true,
+  "bin": {
+    "n-install": "bin/n-install",
+    "n-update": "bin/n-update",
+    "n-uninstall": "bin/n-uninstall"
+  },
+  "homepage": "https://github.com/mklement0/n-install",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mklement0/n-install.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mklement0/n-install/issues"
+  },
+  "scripts": {
+    "test": "make test"
+  },
+  "keywords": [
+    "n",
+    "install",
+    "Node.js",
+    "io.js",
+    "manage",
+    "versions"
+  ],
+  "author": "Michael Klement <mklement0@gmail.com> (http://same2u.net)",
+  "license": "MIT",
+  "net_same2u": {
+    "make_pkg": {
+      "tocOn": true,
+      "tocTitle": "**Contents**"
+    }
+  },
+  "devDependencies": {
+    "doctoc": "^0.13.0",
+    "json": "^9.0.3",
+    "replace": "^0.3.0",
+    "semver": "^4.2.0",
+    "tap": "^0.6.0",
+    "urchin": "^0.0.5"
+  }
+}

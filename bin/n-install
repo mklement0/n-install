@@ -1,0 +1,737 @@
+#!/usr/bin/env bash
+
+#
+# Script-global constants
+# 
+
+##### IMPORTANT: These names must, at least in part, be kept in sync with their counterparts in 'n-update' and 'n-uninstall'.
+kINSTALLER_NAME=n-install  # This script's name; note that since we'll typically be running via curl directly from GitHub, using $(basename "$BASH_SOURCE") to determine the name is not an option.
+kTHIS_REPO_URL='http://git.io/n-install-repo' # This script's source repository - SHORT, git.io-based form.
+kTHIS_REPO_URL_LONG='https://github.com/mklement0/n-install' # This script's source repository in LONG form - needed for deriving raw.githubusercontent.com URLs from it.
+kPREFIX_DIR=${N_PREFIX:-$HOME/n} # The target prefix directory, inside which both a dir. for n itself and the active node version's dirs. will be located.
+## For updating the relevant shell initialization file:
+kINIT_FILE_LINE_ID=" # Added by $kINSTALLER_NAME (see $kTHIS_REPO_URL)." # The string that identifies the line added by us.
+kREGEX_CONFLICTING_LINE='^[^#]*\bN_PREFIX=' # Regex that identifies relevant existing lines.
+##### 
+
+kTHIS_NAME=$kINSTALLER_NAME
+
+kN_REPO_URL='https://github.com/tj/n' # n's GitHub repo URL
+kN_DIRNAME='n' # The name of the subdir. of the $kPREFIX_DIR that *n itself assumes* it is installed in.
+kSUBDIRS=( "$kN_DIRNAME" bin include lib share ) # (informational) all subdirs. of N_PREFIX into which files will be installed as of node 0.12
+
+## Names and download URLs for the helper scripts
+kUPDATE_SCRIPT='n-update' # Filename of the custom update script.
+kUNINSTALL_SCRIPT='n-uninstall' # Filename of the custom uninstall script.
+kHELPER_SCRIPTS=( 
+  "$kUPDATE_SCRIPT"
+  "$kUNINSTALL_SCRIPT"
+) 
+kHELPER_SCRIPT_URLS=( 
+  "${kTHIS_REPO_URL_LONG/\/\/github.com\////raw.githubusercontent.com/}/stable/bin/$kUPDATE_SCRIPT" 
+  "${kTHIS_REPO_URL_LONG/\/\/github.com\////raw.githubusercontent.com/}/stable/bin/$kUNINSTALL_SCRIPT" 
+)
+##
+
+# 
+# BEGIN: Helper functions
+#
+
+# SYNOPSIS
+#   echoColored colorNum [text...]
+# DESCRIPTION
+#   Prints input in the specified color, which must be an ANSI color code (e.g., 31 for red).
+#   Input is either provided via the TEXT operands, or, in their absence, from stdin.
+#   If input is provided via TXT operands, a trailing \n is added.
+#   NOTE: 
+#     - Unlike echo, uses stdin, if no TEXT arguments are specified; you MUST either specify
+#       at least one input operand OR stdin input; in that sense, this function is like a hybrid
+#       between echo and cat. However, *interactive* stdin input makes no sense, and therefore
+#       a newline is simply printed - as with echo without arguments - if stdin is connected to
+#       a terminal and neither operands nor stdin input is provided.
+#     - Coloring is suppressed, if the variable kNO_COLOR exists and is set to 1.
+#       An invoking script may set this in case output is NOT being sent to a terminal.
+#       (E.g., test -t 1 || kNO_COLOR=1)
+# EXAMPLES
+#   echoColored 31 "I'm red"
+#   cat file | echoColored 32 # file contents is printed in green
+echoColored() {
+  local pre="\033[${1}m" post='\033[0m'
+  (( kNO_COLOR )) && { pre= post=; }
+  shift # skip the color argument
+  if (( $# )); then
+    printf "${pre}%s${post}\n" "$*"
+  else
+    [[ -t 0 ]] && { printf '\n'; return; } # no interactive stdin input
+    printf "$pre"; cat; printf "$post"
+  fi  
+}
+
+# SYNOPSIS
+#   dieSyntax [msg|-]
+# DESCRIPTION
+#   Prints a red error message to stderr and exits with exit code 2, meant to indicate a 
+#   syntax problem (invalid arguments).
+#   A standard message is provided, if no arguments are given.
+#   If the first (and only) argument is '-', input is taken from stdin; otherwise, the 
+#   first argument specifies the message to print.
+#   Either way, a preamble with this script's name and the type of message is printed.
+# NOTES
+#   Uses echoColored(), whose coloring may be suppressed with kNO_COLOR=1.
+dieSyntax() { 
+  local kPREAMBLE="$kTHIS_NAME: ARGUMENT ERROR:"
+  if [[ $1 == '-' ]]; then # from stdin
+    { 
+      printf '%s\n' "$kPREAMBLE"
+      sed 's/^/  &/'
+    } | echoColored 31 # red
+  else # from operands
+    echoColored 31 "$kPREAMBLE: ${1:-"Invalid argument(s) specified."} Use -h for help."
+  fi
+  exit 2
+} >&2
+
+# SYNOPSIS
+#   die [msg|- [exitCode]]
+# DESCRIPTION
+#   Prints a red error message to and by default exits with exit code 1, meant to indicate
+#   a runtime problem.
+#   A standard message is provided, if no arguments are given.
+#   If the first (and only) argument is '-', input is taken from stdin; otherwise, the 
+#   first argument specifies the message to print.
+#   Either way, a preamble with this script's name and the type of message is printed.
+# NOTES
+#   Uses echoColored(), whose coloring may be suppressed with kNO_COLOR=1.
+die() { 
+  local kPREAMBLE="$kTHIS_NAME: ERROR:"
+  if [[ $1 == '-' ]]; then # from stdin
+    { 
+      printf '%s\n' "$kPREAMBLE"
+      sed 's/^/  &/'
+    } | echoColored 31 # red
+  else # from operands
+    echoColored 31 "$kPREAMBLE ${1:-"ABORTING due to unexpected error."}"
+  fi
+  exit ${2:-1}
+} >&2
+
+# SYNOPSIS
+#   warn [msg|-]
+# DESCRIPTION
+#   Prints a yellow warning message to stderr.
+#   If the first (and only) argument is '-', input is taken from stdin; otherwise, the 
+#   first argument specifies the message to print.
+#   Either way, a preamble with this script's name and the type of message is printed.
+# NOTES
+#   Uses echoColored(), whose coloring may be suppressed with kNO_COLOR=1.
+warn() {
+  local kPREAMBLE="$kTHIS_NAME: WARNING:"
+  [[ $1 == '-' ]] && shift # for consistency with die() and dieSyntax(), accept '-' as an indicator that stdin input should be used.
+  if (( $# == 0 )); then # from stdin
+    { 
+      printf '%s\n' "$kPREAMBLE"
+      sed 's/^/  &/'
+    } | echoColored 33 # yellow
+  else # from operands
+    echoColored 33 "$kPREAMBLE $*"
+  fi
+} >&2
+
+# -- Coloring convenience output functions
+#    They're based on echoColored(), and thus take either operands or stdin input.
+#    If input is provided via arguments, a trailing \n is added.
+green()  { echoColored 32 "$@"; }
+red()    { echoColored 31 "$@"; }
+blue()   { echoColored 34 "$@"; }
+yellow() { echoColored 33 "$@"; }
+
+isDirEmpty() {
+  [[ -d ${1:-.} ]] || { echo "$FUNCNAME: ERROR: Argument not found or not a directory: $1" >&2; return 2; }
+  [[ $(shopt -s nullglob dotglob; cd "$1"; echo *) =~ ^$|^\.DS_Store$ ]]
+}
+
+# SYNOPIS
+#   rreadlink fileOrDirPath
+# DESCRIPTION
+#   Resolves fileOrDirPath to its ultimate target.
+#   This is a POSIX-compliant implementation of what GNU readlink's -f option does.
+#   Edge cases: won't work with filenames with embedded newlines or filenames containing the string ' -> '.
+# EXAMPLE
+#   In a shell script, use the following to get that script's true directory of origin:
+#     $(dirname -- "$(rreadlink "$0")")
+rreadlink() ( # Execute the function in a *subshell* to localize variables and the effect of `cd`.
+
+  target=$1 fname= targetDir=
+
+  # Try to make the execution environment as predictable as possible:
+  # All commands below are invoked via `command -p`, so we must make sure that `command`
+  # itself is not redefined as an alias or shell function.
+  # `command` is a *builtin* in bash, dash, ksh, zsh, and some platforms do not even have
+  # an external utility version of it (e.g, Ubuntu).
+  # `command` bypasses aliases and shell functions, and `-p` searches for external utilities
+  # in standard locations only, but note that this does *not* come into play if a *builtin*
+  # by the given name exists. zsh requires that option POSIX_BUILTINS be on to also find
+  # builtins with `command`.
+  { CDPATH=; \unalias command; \unset -f command; } >/dev/null 2>&1
+  [ -n "$ZSH_VERSION" ] && options[POSIX_BUILTINS]=on # make zsh find *builtins* with `command` too.
+
+  while :; do # Resolve potential symlinks until the ultimate target is found.
+      [ -L "$target" ] || [ -e "$target" ] || { printf '%s\n' "ERROR: '$target' does not exist." >&2; return 1; }
+      command -p cd "$(command -p dirname -- "$target")" # Change to target dir; necessary for correct resolution of target path.
+      fname=$(command -p basename -- "$target") # Extract filename.
+      if [ -L "$fname" ]; then
+        # Extract [next] target path, which may be defined
+        # *relative* to the symlink's own directory.
+        # Note: We parse `ls -l` output to find the symlink target
+        #       which is the only POSIX-compliant, albeit somewhat fragile, way,
+        target=$(command -p ls -l "$fname")
+        target=${target#* -> }
+        continue # Resolve [next] symlink target.
+      fi
+      break # Ultimate target reached.
+  done
+  targetDir=$(command -p pwd -P) # Get canonical dir. path
+  # Output the ultimate target's canonical path.
+  command -p printf '%s\n' "${targetDir%/}/$fname"
+)
+
+
+# SYNOPSIS
+#   clearDir dir
+# DESCRIPTION
+#   !!!!!!!!!!! USE WITH CAUTION !!!!!!!!!!!!!!
+#   Clears the contents of the specified directory.
+#   Exit code 0 indicates that clearing succeeded.
+clearDir() ( # execute in subshell to localize effect of shopt
+  local d=${1?Missing directory argument} itms=()
+  [[ -d $d ]] || return 1 # Makes sure that dir. exists.
+  shopt -s dotglob nullglob # Make sure that hidden files are included when expanding `*` and that the result is empty if there are no items at all.
+  itms=( "$d"/* ) # Collect items, if any.
+  (( ${#itms[@]} == 0 )) && return 0 # If there are no items at all, return with exit code 0.
+  # There are items: try to remove them all - if there are permission problems, the exit code will be set to a non-zero value.
+  rm -rf "${itms[@]}"
+)
+
+# SYNOPSIS
+#   modifyShellInitFile
+# DESCRIPTION
+#   Modifies the relevant initialization file for the current user's shell by
+#   adding a SINGLE line composed of:
+#     - export N_PREFIX=... command 
+#     - an add-bin-Dir-to-$PATH-if not-yet-there command.
+#  Outputs the full path of the initialization file modified.
+modifyShellInitFile() {
+
+  local line initFile existingLine initFileContents
+
+  # Synthesize the - single - line to add to the init file, using Bash/Ksh/Zsh syntax.
+  # Definition of the N_PREFIX environment variable plus ensuring that
+  # $N_PREFIX/bin is in the $PATH, followed by the identifying comment.
+  printf -v line '%s; %s %s' \
+      "export N_PREFIX=\"${N_PREFIX/#$HOME/\$HOME}\"" \
+      "[[ :\$PATH: == *\":\$N_PREFIX/bin:\"* ]] || PATH+=\":\$N_PREFIX/bin\"" \
+      "$kINIT_FILE_LINE_ID"
+
+  # Determine the shell-specific initialization file.
+  if [[ -n $INSTALL_N_TEST_OVERRIDE_SHELL_INIT_FILE ]]; then # override for testing
+      initFile=$INSTALL_N_TEST_OVERRIDE_SHELL_INIT_FILE
+  else
+    case "$(basename -- "$SHELL")" in
+      'bash')
+        # !! Sadly, bash ONLY reads ~/.bash_profile in LOGIN shells, and on OSX (Darwin) ALL shells are login shells, so on OSX we must target ~/.bash_profile.
+        [[ $(uname) == 'Darwin' ]] && initFile=~/.bash_profile || initFile=~/.bashrc
+        ;;
+      'ksh')
+        initFile=~/.kshrc
+        ;;
+      'zsh')
+        initFile=~/.zshrc
+        ;;
+      *) 
+        warn - <<EOF
+Automatic modification of the initialization file for shell
+$SHELL is not supported.
+For n and the Node.js/io.js versions it manages to work correctly,
+you must MANUALLY ADD THE EQUIVALENT OF THE FOLLOWING TO YOUR SHELL'S
+INITIALIZATION FILE:
+
+$line
+EOF
+        return 0
+        ;;
+    esac
+  fi
+
+  if [[ -f $initFile ]]; then
+
+    existingLine=$(grep -E "$kREGEX_CONFLICTING_LINE" "$initFile")
+    (( $(grep -c '^' <<<"$existingLine") > 1 )) &&
+      die - <<EOF
+Aborting, because multiple existing definitions of \$N_PREFIX were found in
+'$initFile':
+
+$existingLine
+
+Please remove them and try again.
+EOF
+
+  fi
+  
+  if [[ -n $existingLine && $existingLine != *$kINIT_FILE_LINE_ID* ]]; then # A "foreign" 'export N_PREFIX=' line was found.
+
+    die - <<EOF
+Aborting, because an existing definition of \$N_PREFIX added by someone else
+was found in '$initFile':
+
+$existingLine
+
+Please remove it and try again.
+EOF
+
+  else # No existing line was found, or one we ourselves previously added.
+    errMsg="Aborting, because shell initialization file '$initFile' could not be updated."
+    if [[ -z $existingLine ]]; then # Simplest case: no traces of an old installation were found.
+      # Simply append to file (which may get created on demand.)
+      printf '\n%s\n' "$line" >>"$initFile" || { echo "$errMsg" >&2; return 1; }
+    elif [[ "$existingLine" != "$line" ]]; then # A line from a previous installation of ours was found: update it.
+      # !! We do NOT use sed -i, because that is not safe, notably because it
+      # !! would destroy a symlink, if the target file happens to be one.
+      # !! Instead, we read the entire contents into memory, and rewrite
+      # !! the modified string using simply '>', which DOES preserve the
+      # !! existing inode and thus file attributes including symlink status.
+      # !! Also note that for simplicity and consistency we add the new line at the *end*.
+      initFileContents=$(grep -Ev "$kREGEX_CONFLICTING_LINE" "$initFile")
+      printf '%s\n\n%s\n' "$initFileContents" "$line" > "$initFile" || die "$errMsg"
+    fi
+  fi
+  
+  printf '%s\n' "$initFile"
+
+  return 0
+}
+
+# SYNOPSIS
+#   parseSemVer [-2] version
+# DESCRIPTION
+#   Parses the specified semver-2.0-compatible version into its components (see http://semver.org/).
+#   If you specify option -2, only the <major>.<minor> part must be present.
+#   Nothing is output if the version is not semver-compatible, and the return value is set to 1.
+#   Each component is returned on its own line, up to and including the last component found:
+#   Line 1 == major, line 2 == minor, line 3 == patch, line 4 == pre-release ID, line 5 == build metadata
+#   Thus, you get 2-5 lines of output, but note that if build metada was specified without also
+#   specifying a pre-release ID, line 4 will be empty.
+# EXAMPLES
+#   parseSemVer 0.5.12 # -> $'0\n5\n12'
+#   parseSemVer 0.5.12 # -> $'0\n5\n12'
+#   parseSemVer 0.5.12-pre # -> $'0\n5\n12\npre'
+#   parseSemVer 0.5.12-pre+build7 # -> $'0\n5\n12\npre\nbuild7'
+#   parseSemVer 0.5.12+build7 # -> $'0\n5\n12\n\nbuild7'
+parseSemVer() {
+  local onlyMajorMinorRequired=0
+  [[ $1 == '-2' ]] && { onlyMajorMinorRequired=1; shift; }
+  (( $# == 1 )) || return 2
+
+  # Parse into major, minor, patch, and *roughly* into pre-release identifiers and metadata.
+  local num='([0-9]|[1-9][0-9]+)' # a decimal integer, but leading zeros are not allowed
+  local idList='([0-9A-Za-z.-]+)' # looser-than-required expression for the sub-identifiers making up the pre-release and metada parts; additional validation required
+  # [[ $1 =~ ^$num\.$num(\.$num(-$idList(\+$idList)?)?)?$ ]] || return 1
+  [[ $1 =~ ^$num\.$num(\.$num(-$idList)?(\+$idList)?)?$ ]] || return 1
+
+  # See if we have at least major, minor, patch, or, if -2 was specified, major and minor.
+  local n major=${BASH_REMATCH[1]} minor=${BASH_REMATCH[2]} patch=${BASH_REMATCH[4]} prId=${BASH_REMATCH[6]} buildMd=${BASH_REMATCH[8]}
+  [[ -n $patch ]] || (( onlyMajorMinorRequired )) || return 1
+
+  # Validate the optional pre-release part and the metadata part, each composed of
+  # a list of non-empty, dot-separated sub-identifiers that are either decimal integers without
+  # leading zeros or strings composed of any mix of [0-9A-Za-z-]
+  local id ids=()
+  for n in prId buildMd; do
+    if [[ -n ${!n} ]]; then
+      IFS=. read -ra ids <<<"${!n}" # break into '.'-separated sub-IDs
+      [[ ${!n} =~ \.$ ]] && return 1 # must not end in '.' (if the last char. is an IFS char, `read` ignores it).
+      for id in "${ids[@]}"; do
+        [[ -z $id ]] && return 1 # empty sub-IDs not allowed.      
+        [[ -n $(tr -d '[0-9]' <<<"$id") ]] && continue # sub-ID contains non-digits - no further validation required
+        [[ $id =~ ^$num$ ]] || return 1  # otherwise: a decimal integer - make sure it has no leading zeros, as with major, minor, patch.
+      done
+    fi
+  done
+
+  # Output all components found.
+  local all=0
+  [[ -n $buildMd ]] && all=1
+  for n in major minor patch prId buildMd; do
+    [[ $all -eq 0 && -z ${!n} ]] && break
+    printf '%s\n' "${!n}"
+  done
+
+  return 0
+}
+
+
+# 
+# END: Helper functions
+#
+
+#
+# MAIN SCRIPT BODY
+#
+
+unset CDPATH  # to prevent unpredictable `cd` behavior
+[[ -t 1 ]] || kNO_COLOR=1 # produce colored output only when outputting to a terminal.
+
+# Output version number and exit, if requested. Note that the `ver='...'` statement is automatically updated by `make version VER=<newVer>` - DO keep the 'v' suffix in the variable _definition_.
+[[ $1 == '--version' ]] && { ver='v0.0.1'; echo "$kTHIS_NAME ${ver#v}"; exit 0; }
+
+if [[ $1 == '--help' || $1 == '-h' ]]; then
+  cat <<EOF
+SYNOPSIS
+  $kTHIS_NAME [-t] [-y] [version...]
+
+DESCRIPTION
+  Installs n, the Node.js version manager, which bypasses the need to manually
+  install a Node.js version first.
+
+  Additionally, installs $kUPDATE_SCRIPT for updating n,
+  and $kUNINSTALL_SCRIPT for uninstallation.
+
+  On successful installation of n, the specified Node.js/io.js version(s)
+  are installed; by default, this is the latest stable Node.js version;
+  To opt out, specify '-' as the only version argument.
+  'stable' installs the latest stable version, available, 'latest' the latest
+  available overall; otherwise, specify an explicit version numer, such as
+  '0.12' or '0.10.35'.
+  To install io.js versions, prefix the version with 'io:'; e.g., 'io:stable'.
+  If multiple versions are specified, the first one will be made active.
+
+  The default installation directory is:
+
+    ${kPREFIX_DIR/#$HOME/~}
+  
+  which can be overridden by setting environment variable N_PREFIX to an
+  absolute path before invocation; either way, however, the installation
+  directory must either not exist yet or be empty.
+
+  If your shell is Bash, Ksh, or Zsh, the relevant initialization file will be
+  modified so as to:
+   - export environment variable \$N_PREFIX to point to the installation dir.
+   - ensure that the directory containing the n executable, \$N_PREFIX/bin,
+     is in the \$PATH.
+  For any other shell you'll have to make these modifications yourself.
+
+  Options:
+
+  -t
+    Merely tests if all installation prerequisites are met, which is signaled
+    with an exit code of 0.
+
+  -y
+    Assumes yes as the reply to all prompts; in other words: runs unattended
+    by auto-confirming the prompts.
+
+  For more information, see $kTHIS_REPO_URL
+
+PREREQUISITES
+  bash ... to run this script and n itself.
+  curl ... to install this script directly from GitHub.
+  git ... to clone n's GitHub repository.
+  GNU make ... to run n's installation procedure.
+  
+EXAMPLES
+    # Install n and the latest stable Node.js version, with 
+    # interactive prompt:
+  $kTHIS_NAME 
+    # Only test if installation to the specified location would work.
+  N_PREFIX=~/util/n $kTHIS_NAME -t
+    # Automated installation of n, without installing the latest
+    # stable Node.js version.
+  $kTHIS_NAME -y -
+    # Automated installation of n, followed by automated installation
+    # of the latest stable and unstable Node.js versions, as well
+    # as the latest 0.8.x version.
+  $kTHIS_NAME -y stable latest 0.8
+EOF
+    exit 0
+fi
+
+# Check for prerequisites.
+for exe in curl git make; do
+  [[ -n $(command -v "$exe") ]] || die "\`$exe\` not found, which is required for operation."
+done
+
+# Parse options.
+skipPrompts=0 testPrerequisitesOnly=0 skipNodeInstall=0
+while getopts ':ytN' opt; do
+  [[ $opt == '?' ]] && dieSyntax "Unknown option: -$OPTARG"
+  [[ $opt == ':' ]] && dieSyntax "Option -$OPTARG is missing its argument."  
+  case "$opt" in
+    t)
+      testPrerequisitesOnly=1
+      ;;
+    y)
+      skipPrompts=1
+      ;;
+    *)
+      die "DESIGN ERROR: option -$opt not handled."
+      ;;
+  esac
+done
+shift $((OPTIND - 1))
+
+# Determine what Node.js/io.js versions to install later.
+if (( $# == 0 )); then # no operands
+  # Install the latest stable Node.js version by default.
+  versionsToInstall=( 'stable' )
+else # operands specified: interpret them as Node.js/io.js versions to install
+  # *Syntactically* validate version numbers specified, if any: i.e.,
+  # make sure they're either 'stable', 'latest', or either <major>.<minor>.<patch>
+  # or <major>.<minor>. A '-' suppresses the default version ('stable') to install.
+  # Note that checking for the actual availability of versions would be too time-consuming.
+  versionsToInstall=()
+  for ver; do
+    case $ver in
+      -)
+        : # means: do not install the default ('stable'); typically, 
+          # we expect that to be the only operand, since an explicit list
+          # of operands always overrides the default, but we don't enforce this.
+        ;;
+      stable|latest|io:stable|io:latest) # symbolic names for latest stable / unstable versions
+        versionsToInstall+=( "$ver" )
+        ;;
+      *) # must be a version number in the form <major>.<minor>[.<patch>]
+        componentCount=$(parseSemVer -2 "${ver#io:}" | wc -l)
+        (( componentCount == 2 || componentCount == 3 )) ||
+          dieSyntax - <<<"'$ver' is not a valid Node.js/io.js version specifier."$'\n'"(Must be 'stable', 'latest', or <major>.<minor>[.<patch>], optionally prefixed with 'io:'.)"
+        versionsToInstall+=( "$ver" )
+        ;;
+    esac
+  done
+fi
+
+# !! We prevent installation if the `n` or `npm` or `node` or `iojs` binaries are in the path, implying 
+# !! that either n or Node.js/io.js are already installed - whether they were installed with
+# !! this utility or not.
+existingExes=()
+for exe in n node iosj npm; do
+  # Note that `command -v` on Linux and OSX supports multiple arguments, but POSIX mandates only 1.
+  exePath=$(command -v "$exe") && existingExes+=( "$exePath" )
+done
+if (( ${#existingExes[@]} > 0 )); then
+
+  die - 3 <<EOF
+Aborting, because n and/or Node.js/io.js-related binaries are already
+in the \$PATH:
+         
+$(printf '       %s\n' "${existingExes[@]}")
+
+Please remove any existing n, Node.js or io.js installation, then try 
+again.
+$([[ -n $(command -v n) ]] && printf %s "If you previously installed n via $kTHIS_REPO_URL,"$'\n'"use $kUNINSTALL_SCRIPT to uninstall.")
+EOF
+
+fi
+
+N_PREFIX=$kPREFIX_DIR
+
+# Make sure that N_PREFIX is an *absolute* path.
+[[ $N_PREFIX == /* ]] || die "'$N_PREFIX' is not an absolute path; please specify the target directory as an absolute path."
+
+# If the target dir. already exists, make sure it is empty.
+didExist=0
+if [[ -d $N_PREFIX ]]; then
+
+  didExist=1  
+  isDirEmpty "$N_PREFIX" || die - 3 <<EOF
+Target directory '$N_PREFIX' already exists and is not empty.
+Make sure it is completely empty, then try again.
+EOF
+
+fi
+
+# Make sure we can create n's directory.
+nDir=${N_PREFIX}/${kN_DIRNAME}
+mkdir -p "$nDir" || die "Failed to create directory '$nDir'."
+
+# Set up a trap to automatically clean up the dir(s) in case the installation
+# doesn't finish - however the script terminates / is terminated.
+sigs=( EXIT HUP INT QUIT TERM )
+# A note re exit code: with the exception of the EXIT pseudo-signal in the event
+# of *self-initiated* termination, we do not have access to the signal number, 
+# and $? will be 0. Unless -t was specified, for which an exit-code override is used,
+# this trap (handler) typically kicks in in the event of *failure*,
+# so, unless overridden, we ensure that a nonzero exit code is set.
+# Again, the exception is the EXIT pseudo-signal in case of *signal-induced* 
+# termination, which will *invariably* result in exit code 128 + SIGNUM.
+# !! WE CAN ONLY CLEAN UP THE TARGET DIR BECAUSE WE'VE PREVIOUSLY ENSURED THAT 
+# !! $N_PREFIX EITHER DIDN'T EXIST BEFORE OR WAS EMPTY.
+ecOverride= # Set this to a value to override the exit code that the trap should report.
+trap 'ec=${ecOverride:-$?}; [[ $ec -eq 0 && -z $ecOverride ]] && ec=1; (( didExist )) && clearDir "$N_PREFIX" || rm -rf "$N_PREFIX"; exit $ec' "${sigs[@]}"
+
+# If only prerequisite testing was requested, report success and exit here.
+if (( testPrerequisitesOnly )); then
+    echo "Prerequisites for installing to '$N_PREFIX' are met."
+    ecOverride=0
+    exit
+fi
+
+if (( ! skipPrompts )); then
+
+  cat <<EOF
+===
+You are ABOUT TO INSTALL n, the Node.js version manager, in:
+
+  $(green $N_PREFIX)
+$( (( ${#versionsToInstall[@]} > 0 )) && cat <<EOF2 # !! the last line before 'EOF2' contains a single space to ensure that it isn't trimmed by the command subst.
+
+Afterward, the following Node.js/io.js versions will be installed,
+and the first one listed will be made active; 'stable' refers to the
+latest stable Node.js version, 'latest' to the latest available; io.js
+versions are prefixed with 'io:'; '-' means that no versions will be
+installed:
+
+  $(green "${versionsToInstall[*]}")
+ 
+EOF2
+)
+If your shell is Bash, Ksh, or Zsh, the relevant initialization file will be
+modified in order to:
+ - export environment variable \$N_PREFIX.
+ - ensure that \$N_PREFIX/bin is in the \$PATH
+For any other shell you'll have to make these modifications yourself (details
+to follow).
+
+For more information, see $kTHIS_REPO_URL
+===
+EOF
+
+  # Determine where to read user input from:
+  #   If -f ${BASH_SOURCE} is true, we're running from a local script file, such as during testing, so we respect whatever stdin is set to, so that user input can be *simulated*.
+  #   Otherwise, the assumption is that we're running via curl ... | bash, in which case we always want to read from /dev/tty - giving us a chance to 
+  #   to pipe the script contents via stdin, while soliciting user input from the terminal (unless -y was specified to skipt he confirmation prompt).
+  [[ -f ${BASH_SOURCE} ]] && src='/dev/stdin' || src='/dev/tty'
+
+  # Prompt the user:
+  while :; do
+    read -ep "CONTINUE (y/N)? " promptInput < "$src" || exit # `read` fails only if stdin does NOT come from a terminal
+    [[ $promptInput =~ ^[nN]$ || -z $promptInput ]] && { echo "Aborted." >&2; exit 3; }
+    [[ $promptInput != [yY] ]] && { echo "Invalid input; please try again." 1>&2; continue; }
+    break
+  done
+
+fi
+
+# Getting here means that installation prerequisites are fulfilled and the 
+# intent to install was [auto-]confirmed.
+
+# Derive additional paths:
+nRepoDir=${nDir}/.repo
+nBinDir=${N_PREFIX}/bin
+
+# Clone n's repository into "${N_PREFIX}/n/.repo"
+echo "-- Cloning $kN_REPO_URL to '$nRepoDir'..."
+git clone -q "$kN_REPO_URL" "$nRepoDir/" >/dev/null || die "Aborting, because cloning n's GitHub repository into '$nRepoDir' failed."
+
+echo "-- Running local n installation to '$nBinDir'..."
+(cd "$nRepoDir" && PREFIX="$N_PREFIX" make install >/dev/null) || die "Aborting, because n's own installation procedure failed."
+
+# Modify the relevant shell initialization file.
+initFile=$(modifyShellInitFile) || die
+echo "-- Shell initialization file '$initFile' updated."
+
+# Download/copy the helper scripts.
+#   Note that we do not abort on failing to download/copy them, because they
+#   are not essential for operation.
+echo "-- Installing helper scripts in '$nBinDir'..."
+
+helpersCopiedLocally=0
+if [[ -f ${BASH_SOURCE} ]]; then # running from a local script file
+
+  # TRY to copy the helper scripts from the same location as this script, 
+  # to ensure that they match in terms of behavior.
+  # However, the helper scripts may not be there, if someone just downloaded
+  # this script by itself - in that case we fall back on downloading from
+  # GitHub below.
+
+  # Determine the true location of this script, with symlinks resolved.
+  (cd "$(dirname "$(rreadlink "$BASH_SOURCE")")" &&
+    cp "${kHELPER_SCRIPTS[@]}" "$nBinDir/" &&
+     echo "(Helper scripts copied from '$PWD'.)"
+  ) 2>/dev/null && helpersCopiedLocally=1
+
+fi
+
+if (( ! helpersCopiedLocally )); then  # Running from GitHub with `curl ... | bash`, or from a lone local copy of `n-install` without its helper scripts present.
+
+  # Download helper scripts from GitHub.
+
+  cd "$nBinDir" || die
+    i=0
+    for helperScript in "${kHELPER_SCRIPTS[@]}"; do  
+      helperScriptUrl="${kHELPER_SCRIPT_URLS[i++]}"
+      # Note: The curl command succeeds even if the target file doesn't exist, so we
+      #       check the resulting file's 1st line for a shebang line to determine
+      #       if a script was truly downloaded or not, and remove a download file
+      #       that's not a script.
+      curl -sS "$helperScriptUrl" -O  && head -n 1 "$helperScript" | grep -q '^#!' && chmod +x "$helperScript" || {
+        rm -f "$helperScript"
+        warn - <<EOF
+Failed to download helper script '$helperScriptUrl' to
+'$nBinDir/$helperScript'.
+For manual procedures, see $kTHIS_REPO_URL.
+EOF
+      }    
+    done
+  cd - >/dev/null
+
+fi
+
+# At this point we consider installation of n itself successful, even if
+# installation of Node.js/io.js versions below fails or is aborted.
+# Therefore, we now deactivate the cleanup handler.
+trap - "${sigs[@]}"
+
+# Install the requested Node.js/io.js versions, if any.
+
+toInstallCount=${#versionsToInstall[@]}
+installedCount=0
+
+if (( toInstallCount > 0 )); then
+
+  echo "-- Installing the requested Node.js/io.js version(s)..."
+
+  ver= args=() firstInstalledVerArgs=() i=0
+  for ver in "${versionsToInstall[@]}"; do
+    echo "   $(( ++i )) of ${toInstallCount}: ${ver}..."
+    [[ $ver == 'io:'* ]] && args=( io "${ver#io:}" ) || args=( "$ver" )
+    # Note: To be safe, we place $nBinDir FIRST in the path for this invocation.
+    if PATH="$nBinDir:$PATH" N_PREFIX="$N_PREFIX" n "${args[@]}"; then
+      (( ++installedCount == 1 )) && firstInstalledVerArgs=( "${args[@]}" )
+    else
+      warn "Failed to install version '$ver'."
+    fi
+  done
+
+  # Activate the first successfully installed version (otherwise the last
+  # version installed would be the active one).
+  if (( installedCount > 1 )); then
+     # Note that n uses the same syntax for installing and activating an installed version.
+     PATH="$nBinDir:$PATH" N_PREFIX="$N_PREFIX" n "${firstInstalledVerArgs[@]}"|| warn "Failed to activate version '$ver'."
+  fi
+
+fi
+
+cat <<EOF
+=== n successfully installed.
+  $( (( installedCount > 0 )) && 
+   echo "The active Node.js/io.js version is: $("$nBinDir"/node --version)" ||
+   echo "Run \`n stable\` to install the latest stable Node.js version."
+  )
+  Run \`n -h\` for help.
+  To update n later, run \`$kUPDATE_SCRIPT\`.
+  To uninstall, run \`$kUNINSTALL_SCRIPT\`.
+
+  IMPORTANT: OPEN A NEW TERMINAL WINDOW before using n and Nodejs/io.js.
+===
+EOF
+
+exit 0

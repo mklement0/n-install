@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+# ---
+# IMPORTANT: Use the following statement at the TOP OF EVERY TEST SCRIPT
+#            to ensure that this package's 'bin/' subfolder is added to the path so that
+#            this package's CLIs can be invoked by their mere filename in the rest
+#            of the script.
+# ---
+PATH=${PWD%%/test*}/bin:$PATH
+
+# Helper function for error reporting.
+die() { (( $# > 0 )) && echo "$*" >&2; exit 1; }
+
+# Choose an unknown option.
+unknownOption=-9
+
+# Ensure that using an unknown option results in an error.
+
+
+errMsg="Unknown option was not detected."
+
+for exe in n-install n-update n-uninstall; do
+  N_PREFIX=/foo/bar SHELL=/foo/bar "$exe" $unknownOption && die "by itself: $errMsg"
+  N_PREFIX=/foo/bar SHELL=/foo/bar "$exe" -y $unknownOption && die "in combination: $errMsg"
+done
+
+exit 0

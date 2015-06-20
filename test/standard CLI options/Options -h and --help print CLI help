@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+# ---
+# IMPORTANT: Use the following statement at the TOP OF EVERY TEST SCRIPT
+#            to ensure that this package's 'bin/' subfolder is added to the path and this
+#            package's CLIs can therefore be invoked by their mere filename in the rest
+#            of the script.
+# ---
+PATH=${PWD%%/test*}/bin:$PATH
+
+# Helper function for error reporting.
+die() { (( $# > 0 )) && echo "$*" >&2; exit 1; }
+
+# Execute your tests as shell commands below. 
+# An exit code of zero signals success, any other code signals an error
+# and causes this test to fail.
+# See https://github.com/tlevine/urchin.
+
+errMsg="Utility's own name not found in output."
+
+for exe in n-install n-update n-uninstall; do
+  "$exe" -h | fgrep -qw "$exe" die "$exe: $errMsg"
+  "$exe" --help | fgrep -qw "$exe" die "$exe: $errMsg"
+done
+
+exit 0

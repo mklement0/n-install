@@ -1,0 +1,9 @@
+
+# Somebody else's N_PREFIX= entry.
+
+
+# Added by God-knows-who
+export N_PREFIX
+:; N_PREFIX='/Users/jdoe/n'
+
+# original last line

@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+# Outputs a $PATH variable that doesn't include the dir. that a `node` executable resides in.
+# CAVEAT: Assumes that there's *at most 1* executable in the path.
+
+# Get the `node` executable's full path.
+nodeExe=$(command -v node)
+
+# If there is no `node` executable in the path, return $PATH as is.
+[[ -z $nodeExe  ]] && echo "$PATH"
+
+# Otherwise, remove the node dir. from the $PATH and output the result
+# !! and pray that that dir. doesn't host other executables needed by the tests.
+nodeDir=$(dirname "$nodeExe")
+
+auxPath=":$PATH:"
+auxPath="${auxPath//:$nodeDir:/}"
+auxPath="${auxPath#:}"; auxPath="${auxPath%:}"
+
+echo "$auxPath"

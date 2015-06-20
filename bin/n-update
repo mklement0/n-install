@@ -1,0 +1,212 @@
+#!/usr/bin/env bash
+
+#
+# Script-global constants
+# 
+
+kTHIS_NAME=$(basename "$0")
+
+##### IMPORTANT: These names must be kept in sync with the master copies in 'n-install'.
+kINSTALLER_NAME=n-install  # The installer script's name.
+kTHIS_REPO_URL='http://git.io/n-install-repo' # This script's source repository.
+#####
+
+# 
+# BEGIN: Helper functions
+#
+
+# SYNOPSIS
+#   echoColored colorNum [text...]
+# DESCRIPTION
+#   Prints input in the specified color, which must be an ANSI color code (e.g., 31 for red).
+#   Input is either provided via the TEXT operands, or, in their absence, from stdin.
+#   If input is provided via TXT operands, a trailing \n is added.
+#   NOTE: 
+#     - Unlike echo, uses stdin, if no TEXT arguments are specified; you MUST either specify
+#       at least one input operand OR stdin input; in that sense, this function is like a hybrid
+#       between echo and cat. However, *interactive* stdin input makes no sense, and therefore
+#       a newline is simply printed - as with echo without arguments - if stdin is connected to
+#       a terminal and neither operands nor stdin input is provided.
+#     - Coloring is suppressed, if the variable kNO_COLOR exists and is set to 1.
+#       An invoking script may set this in case output is NOT being sent to a terminal.
+#       (E.g., test -t 1 || kNO_COLOR=1)
+# EXAMPLES
+#   echoColored 31 "I'm red"
+#   cat file | echoColored 32 # file contents is printed in green
+echoColored() {
+  local pre="\033[${1}m" post='\033[0m'
+  (( kNO_COLOR )) && { pre= post=; }
+  shift # skip the color argument
+  if (( $# )); then
+    printf "${pre}%s${post}\n" "$*"
+  else
+    [[ -t 0 ]] && { printf '\n'; return; } # no interactive stdin input
+    printf "$pre"; cat; printf "$post"
+  fi  
+}
+
+# SYNOPSIS
+#   dieSyntax [msg|-]
+# DESCRIPTION
+#   Prints a red error message to stderr and exits with exit code 2, meant to indicate a 
+#   syntax problem (invalid arguments).
+#   A standard message is provided, if no arguments are given.
+#   If the first (and only) argument is '-', input is taken from stdin; otherwise, the 
+#   first argument specifies the message to print.
+#   Either way, a preamble with this script's name and the type of message is printed.
+# NOTES
+#   Uses echoColored(), whose coloring may be suppressed with kNO_COLOR=1.
+dieSyntax() { 
+  local kPREAMBLE="$kTHIS_NAME: ARGUMENT ERROR:"
+  if [[ $1 == '-' ]]; then # from stdin
+    { 
+      printf '%s\n' "$kPREAMBLE"
+      sed 's/^/  &/'
+    } | echoColored 31 # red
+  else # from operands
+    echoColored 31 "$kPREAMBLE: ${1:-"Invalid argument(s) specified."} Use -h for help."
+  fi
+  exit 2
+} >&2
+
+# SYNOPSIS
+#   die [msg|- [exitCode]]
+# DESCRIPTION
+#   Prints a red error message to and by default exits with exit code 1, meant to indicate
+#   a runtime problem.
+#   A standard message is provided, if no arguments are given.
+#   If the first (and only) argument is '-', input is taken from stdin; otherwise, the 
+#   first argument specifies the message to print.
+#   Either way, a preamble with this script's name and the type of message is printed.
+# NOTES
+#   Uses echoColored(), whose coloring may be suppressed with kNO_COLOR=1.
+die() { 
+  local kPREAMBLE="$kTHIS_NAME: ERROR:"
+  if [[ $1 == '-' ]]; then # from stdin
+    { 
+      printf '%s\n' "$kPREAMBLE"
+      sed 's/^/  &/'
+    } | echoColored 31 # red
+  else # from operands
+    echoColored 31 "$kPREAMBLE ${1:-"ABORTING due to unexpected error."}"
+  fi
+  exit ${2:-1}
+} >&2
+
+# SYNOPSIS
+#   warn [msg|-]
+# DESCRIPTION
+#   Prints a yellow warning message to stderr.
+#   If the first (and only) argument is '-', input is taken from stdin; otherwise, the 
+#   first argument specifies the message to print.
+#   Either way, a preamble with this script's name and the type of message is printed.
+# NOTES
+#   Uses echoColored(), whose coloring may be suppressed with kNO_COLOR=1.
+warn() {
+  local kPREAMBLE="$kTHIS_NAME: WARNING:"
+  [[ $1 == '-' ]] && shift # for consistency with die() and dieSyntax(), accept '-' as an indicator that stdin input should be used.
+  if (( $# == 0 )); then # from stdin
+    { 
+      printf '%s\n' "$kPREAMBLE"
+      sed 's/^/  &/'
+    } | echoColored 33 # yellow
+  else # from operands
+    echoColored 33 "$kPREAMBLE $*"
+  fi
+} >&2
+
+# 
+# END: Helper functions
+#
+
+
+unset CDPATH  # to prevent unpredictable `cd` behavior
+[[ -t 1 ]] || kNO_COLOR=1  # produce colored output only when outputting to a terminal
+
+# Output version number and exit, if requested. Note that the `ver='...'` statement is automatically updated by `make version VER=<newVer>` - DO keep the 'v' suffix in the variable _definition_.
+[ "$1" = '--version' ] && { ver='v0.0.1'; echo "$kTHIS_NAME ${ver#v}"; exit 0; }
+
+# Command-line help.
+if [ "$1" = '--help' ] || [ "$1" = '-h' ]; then
+  cat <<EOF
+SYNOPSIS
+  $kTHIS_NAME [-y]
+
+DESCRIPTION
+  Updates an installed copy of n, the Node.js version manager,
+  to the latest version, assuming that it was originally installed with
+  $kINSTALLER_NAME into:
+
+    \${N_PREFIX}/n
+
+  which, on this system, is:
+
+    ${N_PREFIX}/n
+
+  -y
+    Skips the confirmation prompt.
+
+  For more information, see $kTHIS_REPO_URL
+
+EOF
+    exit 0
+fi
+
+# Process options.
+skipPrompt=0
+while getopts ':y' opt; do  # $opt will receive the option *letters* one by one; a trailing : means that an arg. is required, reported in $OPTARG.
+  [[ $opt == '?' ]] && dieSyntax "Unknown option: -$OPTARG"
+  [[ $opt == ':' ]] && dieSyntax "Option -$OPTARG is missing its argument."  
+  case "$opt" in
+    y)
+      skipPrompt=1
+      ;;
+    *)
+      die "DESIGN ERROR: option -$opt not handled."
+      ;;
+  esac
+done
+shift $((OPTIND - 1)) # Skip the already-processed arguments (options).
+
+# Make sure that not too many arguments were specified.
+(( $# == 0 )) || dieSyntax "Unexpected argument(s) specified."
+
+[[ -n $N_PREFIX ]] || die "Cannot locate n, because environment variable N_PREFIX is not defined."
+
+# Check for prerequisites.
+for exe in git make; do
+  [[ -n $(command -v "$exe") ]] || die "Required binary \`$exe\` not found."
+done
+
+
+nDir="$N_PREFIX/n"
+repo="$nDir/.repo"
+nExe="$N_PREFIX/bin/n"
+
+[[ -d $repo/.git ]] || die "n repository not found in '$nDir'."
+
+# Prompt for confirmation.
+if (( ! skipPrompt )); then
+  while :; do
+    read -p "Check for updates to n (version $("$nExe" --version), installed in '$nDir')? (y/N) " promptInput
+    [[ $promptInput =~ ^[yY]$ ]] && break # OK
+    [[ $promptInput =~ ^[nN]$ || -z $promptInput ]] && { echo "Aborted." 1>&2; exit 3; }
+    echo "Invalid input; please try again (^C to abort)." 1>&2
+  done
+fi
+
+cd "$repo" || die
+
+echo "-- Checking for updates..."
+git pull >/dev/null || die
+
+src="$repo/bin/n"
+target="$nExe"
+
+# Exit, if nothing has changed.
+diff "$src" "$target" >/dev/null && { echo "(Installed version $("$nExe" --version) is up-to-date.)"; exit 0; }
+
+# Invoke the Makefile installation task, which simply copies bin/n to ${N_PREFIX}/bin.
+PREFIX="$N_PREFIX" make install || die
+
+echo "-- n successfully updated to version $("$nExe" --version)."
