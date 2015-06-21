@@ -8,6 +8,8 @@
 - [n-install &mdash; introduction](#n-install-&mdash-introduction)
 - [Examples](#examples)
 - [Installing n](#installing-n)
+  - [Installation from GitHub](#installation-from-github)
+  - [Manual installation](#manual-installation)
   - [Options and background information](#options-and-background-information)
 - [Updating n](#updating-n)
   - [Manual updating](#manual-updating)
@@ -24,7 +26,7 @@
 
 [DO NOT USE YET.]
 
-**Installs [`n`, the Node.js version manager](https://github.com/tj/n)**, on Unix-like platforms, **without needing to install [Node.js](https://nodejs.org/) first**.  
+**Installs [`n`](https://github.com/tj/n)**, the [Node.js](https://nodejs.org/) and [io.js](https://iojs.org/) version manager, on Unix-like platforms, **without needing to install Node.js or ios.js first**.  
 Additionally, installs scripts `n-update` for later on-demand updating of `n`, and `n-uninstall` for uninstalling.
 
 `n` is installed as follows:
@@ -37,16 +39,25 @@ Additionally, installs scripts `n-update` for later on-demand updating of `n`, a
     * append `$N_PREFIX/bin` to the `$PATH`
 * By default, the latest stable Node.js version is installed; you can suppress that or even specify multiple Node.js/io.js versions to install.
 
-
 The simplest case is **installation of `n` with confirmation prompt**, with subsequent **installation of the latest stable Node.js version**:
 
 ```shell
+# For platforms with `curl`:
 curl -L http://git.io/n-install | bash
+
+# For platforms with `wget`:
+wget -qO- http://git.io/n-install | bash
 ```
 
-See [more examples](#examples), and [Installing n](#installing-n) for prerequisites and installation options.
+* Note that any preexisting `n`, Node.js, or io.js installation must be removed before using this installation method.
+* All installation prerequisites are met by default on OSX and some Linux distros; notably, `git` must be installed - see [Installing n](#installing-n) for details.
+* After installation, **be sure to open a new terminal window** before attempting to use `n` / Node.js / io.js.
+
+See examples [below](#examples), and [Installing n](#installing-n) for prerequisites and installation options.
 
 # Examples
+
+Note: The examples use only `curl` for brevity; to run a given command with `wget` instead, replace `curl -L` with `wget -qO-`.
 
 * With confirmation prompt to confirm installing to `$HOME/n ` and installing the latest stable Node.js version:
 
@@ -66,7 +77,7 @@ curl -L http://git.io/n-install | bash -s -- -y
 curl -L http://git.io/n-install | N_PREFIX=~/util/n bash -s -- -y
 ```
 
-* Automated installation to the default location, with subsequent installation of the specified Node.js and io.js versions:
+* Automated installation to the default location, with subsequent installation of the latest stable Node.js and io.js versions, as well as the latest 0.10.x Node.js version:
 
 ```shell
 curl -L http://git.io/n-install | N_PREFIX=~/util/n bash -s -- -y stable io:stable 0.10
@@ -76,17 +87,41 @@ curl -L http://git.io/n-install | N_PREFIX=~/util/n bash -s -- -y stable io:stab
 
 **Supported platforms and prerequisites**
 
-Any Unix-like platform with the following installed:
+Among the platforms supported by Node.js / io.js, any Unix-like platform with the following installed:
 
 * [`bash`](http://www.gnu.org/software/bash/)
-* [`curl`](http://curl.haxx.se/)
+* [`curl`](http://curl.haxx.se/) or [`wget`](http://www.gnu.org/software/wget/)
 * [`git`](http://git-scm.com/)
 * [GNU `make`](http://www.gnu.org/software/make/)
 
-These prerequisites are met by default on OSX and most Linux platforms.
+These prerequisites are met by default on OSX and on at least some Linux platforms.  
+What's missing from some by default is `git`, which, however, is easy to install from the respective package managers (e.g., `sudo apt-get install git` on Debian, and `sudo yum install git` on Fedora).
 
 Irrespective of the installation method chosen below, no further steps are required if your default shell is either **Bash, Ksh, or Zsh**.  
-For other shells, manual updating of their initialization files is required; detailed instructions are provided during installation.
+For other shells, manual updating of the relevant initialization file is required; detailed instructions are provided during installation.
+
+## Installation from GitHub
+
+**With `curl`:**
+
+```shell
+curl -L http://git.io/n-install | [N_PREFIX=<target-dir>] bash [-s -- [-y] [-t] [-y] [version...]]
+```
+
+**With `wget`:**
+
+```shell
+wget -qO- http://git.io/n-install | [N_PREFIX=<target-dir>] bash [-s -- [-y] [-t] [-y] [version...]]
+```
+
+See below for an explanation of the options; `-s --` is required by Bash itself in order to pass options through to the script piped from stdin.
+
+## Manual installation
+
+* Download [this `bash` script](http://git.io/n-install) as `n-install`.
+* Make it executable with `chmod +x`.
+* Move or symlink it to a directory in your `$PATH`.
+* Invoke `n-install` as detailed below.
 
 ## Options and background information
 
@@ -137,7 +172,7 @@ DESCRIPTION
 
   -y
     Assumes yes as the reply to all prompts; in other words: runs unattended
-    by auto-confirming the prompts.
+    by auto-confirming the confirmation prompt.
 
   For more information, see http://git.io/n-install-repo
 
@@ -178,7 +213,7 @@ Run `n-uninstall`; `n-uninstall -y` skips the confirmation prompt.
 
 ## Manual uninstallation
 
-If, for some reason, `n-uninstall` doesn't work, do the following to uninstall `n`:
+If, for some reason, `n-uninstall` doesn't work, do the following:
 
 * Remove the `N_PREFIX` environment-variable definition and associated `PATH` modification from your shell's initialization file.
 
@@ -217,6 +252,6 @@ This project gratefully depends on the following open-source components, accordi
 Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
- 
-* **v0.0.1** (2015-06-16):
-  * Preparing for true initial release (0.1.0).
+
+* **v0.1.0** (2015-06-20):
+  * Initial release.

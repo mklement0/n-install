@@ -378,10 +378,10 @@ parseSemVer() {
 #
 
 unset CDPATH  # to prevent unpredictable `cd` behavior
-[[ -t 1 ]] || kNO_COLOR=1 # produce colored output only when outputting to a terminal.
+[[ -t 1 ]] || kNO_COLOR=1 # turn off colored output if stdout is not connected to a terminal
 
 # Output version number and exit, if requested. Note that the `ver='...'` statement is automatically updated by `make version VER=<newVer>` - DO keep the 'v' suffix in the variable _definition_.
-[[ $1 == '--version' ]] && { ver='v0.0.1'; echo "$kTHIS_NAME ${ver#v}"; exit 0; }
+[[ $1 == '--version' ]] && { ver='v0.1.0'; echo "$kTHIS_NAME ${ver#v}"; exit 0; }
 
 if [[ $1 == '--help' || $1 == '-h' ]]; then
   cat <<EOF
@@ -427,13 +427,13 @@ DESCRIPTION
 
   -y
     Assumes yes as the reply to all prompts; in other words: runs unattended
-    by auto-confirming the prompts.
+    by auto-confirming the confirmation prompt.
 
   For more information, see $kTHIS_REPO_URL
 
 PREREQUISITES
   bash ... to run this script and n itself.
-  curl ... to install this script directly from GitHub.
+  curl or wget ... to download helper scripts from GitHub.
   git ... to clone n's GitHub repository.
   GNU make ... to run n's installation procedure.
   
@@ -455,9 +455,12 @@ EOF
 fi
 
 # Check for prerequisites.
-for exe in curl git make; do
-  [[ -n $(command -v "$exe") ]] || die "\`$exe\` not found, which is required for operation."
+preReqMsg=
+for exe in git make; do
+  [[ -n $(command -v "$exe") ]] || preReqMsg+="${preReqMsg:+$'\n'}\`$exe\` not found, which is required for operation."
 done
+[[ -n $(command -v curl) || -n $(command -v wget) ]] || preReqMsg+="${preReqMsg:+$'\n'}Neither \`curl\` nor \`wget\` found; one of them is required for operation."
+[[ -z $preReqMsg ]] || die - <<<"$preReqMsg"
 
 # Parse options.
 skipPrompts=0 testPrerequisitesOnly=0 skipNodeInstall=0
@@ -526,7 +529,7 @@ $(printf '       %s\n' "${existingExes[@]}")
 
 Please remove any existing n, Node.js or io.js installation, then try 
 again.
-$([[ -n $(command -v n) ]] && printf %s "If you previously installed n via $kTHIS_REPO_URL,"$'\n'"use $kUNINSTALL_SCRIPT to uninstall.")
+$([[ -n $(command -v n) ]] && printf %s "If you previously installed n via $kTHIS_REPO_URL,"$'\n'"run \`$kUNINSTALL_SCRIPT\` to uninstall.")
 EOF
 
 fi
@@ -578,12 +581,12 @@ if (( ! skipPrompts )); then
 
   cat <<EOF
 ===
-You are ABOUT TO INSTALL n, the Node.js version manager, in:
+You are ABOUT TO INSTALL n, the Node.js/io.js VERSION MANAGER, in:
 
   $(green $N_PREFIX)
 $( (( ${#versionsToInstall[@]} > 0 )) && cat <<EOF2 # !! the last line before 'EOF2' contains a single space to ensure that it isn't trimmed by the command subst.
 
-Afterward, the following Node.js/io.js versions will be installed,
+Afterward, THE FOLLOWING Node.js/io.js VERSION(S) WILL BE INSTALLED,
 and the first one listed will be made active; 'stable' refers to the
 latest stable Node.js version, 'latest' to the latest available; io.js
 versions are prefixed with 'io:'; '-' means that no versions will be
@@ -652,7 +655,6 @@ if [[ -f ${BASH_SOURCE} ]]; then # running from a local script file
   # this script by itself - in that case we fall back on downloading from
   # GitHub below.
 
-  # Determine the true location of this script, with symlinks resolved.
   (cd "$(dirname "$(rreadlink "$BASH_SOURCE")")" &&
     cp "${kHELPER_SCRIPTS[@]}" "$nBinDir/" &&
      echo "(Helper scripts copied from '$PWD'.)"
@@ -668,11 +670,14 @@ if (( ! helpersCopiedLocally )); then  # Running from GitHub with `curl ... | ba
     i=0
     for helperScript in "${kHELPER_SCRIPTS[@]}"; do  
       helperScriptUrl="${kHELPER_SCRIPT_URLS[i++]}"
-      # Note: The curl command succeeds even if the target file doesn't exist, so we
+      # Note: The curl / wget command succeeds even if the target file doesn't exist, so we
       #       check the resulting file's 1st line for a shebang line to determine
       #       if a script was truly downloaded or not, and remove a download file
       #       that's not a script.
-      curl -sS "$helperScriptUrl" -O  && head -n 1 "$helperScript" | grep -q '^#!' && chmod +x "$helperScript" || {
+      [[ -n $(command -v curl) ]] &&
+        downloadCmdArgs=( curl -sS "$helperScriptUrl" -O ) ||
+        downloadCmdArgs=( wget --quiet "$helperScriptUrl" )
+      "${downloadCmdArgs[@]}" && head -n 1 "$helperScript" | grep -q '^#!' && chmod +x "$helperScript" || {
         rm -f "$helperScript"
         warn - <<EOF
 Failed to download helper script '$helperScriptUrl' to
