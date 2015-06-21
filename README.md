@@ -80,16 +80,16 @@ curl -L http://git.io/n-install | bash
 curl -L http://git.io/n-install | bash -s -- -y
 ```
 
-* Automated installation to alternative location `~/util/n`, with subsequent installation of the latest stable Node.js version:
-
-```shell
-curl -L http://git.io/n-install | N_PREFIX=~/util/n bash -s -- -y
-```
-
 * Automated installation to the default location, with subsequent installation of the latest stable Node.js and io.js versions, as well as the latest 0.10.x Node.js version:
 
 ```shell
-curl -L http://git.io/n-install | N_PREFIX=~/util/n bash -s -- -y stable io:stable 0.10
+curl -L http://git.io/n-install | bash -s -- -y stable io:stable 0.10
+```
+
+* Automated installation to custom location `~/util/n`, with subsequent installation of the latest stable Node.js version:
+
+```shell
+curl -L http://git.io/n-install | N_PREFIX=~/util/n bash -s -- -y
 ```
 
 # Installing n
@@ -272,6 +272,9 @@ This project gratefully depends on the following open-source components, accordi
 Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
+
+* **[v0.1.1](https://github.com/mklement0/n-install/compare/v0.1.0...v0.1.1)** (2015-06-21):
+  * [doc] Examples revised.
 
 * **v0.1.0** (2015-06-20):
   * Initial release.
