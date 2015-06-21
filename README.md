@@ -26,7 +26,7 @@
 
 [DO NOT USE YET.]
 
-**Installs [`n`](https://github.com/tj/n)**, the [Node.js](https://nodejs.org/) and [io.js](https://iojs.org/) version manager, on Unix-like platforms, **without needing to install Node.js or ios.js first**.  
+**Installs [`n`](https://github.com/tj/n)**, the **[Node.js](https://nodejs.org/) and [io.js](https://iojs.org/) version manager**, on Unix-like platforms, **without needing to install Node.js or io.js first**.  
 Additionally, installs scripts `n-update` for later on-demand updating of `n`, and `n-uninstall` for uninstalling.
 
 `n` is installed as follows:
@@ -42,10 +42,10 @@ Additionally, installs scripts `n-update` for later on-demand updating of `n`, a
 The simplest case is **installation of `n` with confirmation prompt**, with subsequent **installation of the latest stable Node.js version**:
 
 ```shell
-# For platforms with `curl`:
+# Platforms with `curl`:
 curl -L http://git.io/n-install | bash
 
-# For platforms with `wget`:
+# Platforms with `wget`:
 wget -qO- http://git.io/n-install | bash
 ```
 
@@ -87,7 +87,7 @@ curl -L http://git.io/n-install | N_PREFIX=~/util/n bash -s -- -y stable io:stab
 
 **Supported platforms and prerequisites**
 
-Among the platforms supported by Node.js / io.js, any Unix-like platform with the following installed:
+Among the platforms supported by Node.js / io.js, any Unix-like platform with the following is supported:
 
 * [`bash`](http://www.gnu.org/software/bash/)
 * [`curl`](http://curl.haxx.se/) or [`wget`](http://www.gnu.org/software/wget/)
@@ -178,7 +178,7 @@ DESCRIPTION
 
 PREREQUISITES
   bash ... to run this script and n itself.
-  curl ... to install this script directly from GitHub.
+  curl or wget ... to download helper scripts from GitHub.
   git ... to clone n's GitHub repository.
   GNU make ... to run n's installation procedure.
   
@@ -253,5 +253,5 @@ Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
 
-* **v0.1.0** (2015-06-20):
-  * Initial release.
+* **[v0.0.2](https://github.com/mklement0/n-install/compare/v0.0.1...v0.0.2)** (2015-06-21):
+  * wget support added
