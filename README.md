@@ -68,7 +68,7 @@ See [Installation options](#installation-options) for details.
 Note: The examples use only `curl` for brevity; to run a given command with `wget` instead, replace `curl -L` with `wget -qO-`.
 -->
 
-* With confirmation prompt to confirm installing to `$HOME/n ` and installing the latest stable Node.js version:
+* Installation with confirmation prompt to default location `$HOME/n` and installation of the latest stable Node.js version:
 
 ```shell
 curl -L http://git.io/n-install | bash
@@ -272,6 +272,9 @@ This project gratefully depends on the following open-source components, accordi
 Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
+
+* **[v0.1.2](https://github.com/mklement0/n-install/compare/v0.1.1...v0.1.2)** (2015-06-21):
+  * [doc] Examples revised.
 
 * **[v0.1.1](https://github.com/mklement0/n-install/compare/v0.1.0...v0.1.1)** (2015-06-21):
   * [doc] Examples revised.
