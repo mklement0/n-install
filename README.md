@@ -34,20 +34,26 @@ Additionally, installs scripts `n-update` for later on-demand updating of `n`, a
 * The installation target is a **dedicated directory**, which **defaults to `~/n`** and can be overridden with environment variable `N_PREFIX`; n itself as well as the active Node.js/io.js version are placed there.
     * When overriding, it is advisable to choose a user location - typically, a subfolder of `~` (at any level) - so as to avoid the need to use `sudo` for installation of global `npm` packages.
     * Using a dedicated directory to hold both `n` and the Node.js/io.js versions greatly simplifies later uninstallation.
-* If your shell is **`bash`, `ksh`, or `zsh`, the relevant shell initialization file is updated** to:
-    * define environment variable `N_PREFIX` to point to the installation directory
-    * append `$N_PREFIX/bin` to the `$PATH`
+* If your shell is **`bash`, `ksh`, or `zsh`, the relevant shell initialization file is modified**:
+    * Environment variable `N_PREFIX` is defined to point to the installation directory.
+    * Directory `$N_PREFIX/bin` is appended to the `$PATH`, unless already present.
+    * For other shells, these modification must be performed manually; instructions are provided during installation.
 * By default, the latest stable Node.js version is installed; you can suppress that or even specify multiple Node.js/io.js versions to install.
 
 The simplest case is **installation of `n` with confirmation prompt**, with subsequent **installation of the latest stable Node.js version**:
 
+```shell
+curl -L http://git.io/n-install | bash
+```
+
+<!-- ACTIVATE THIS ONCE n ITSELF SUPPORTS WGET
 ```shell
 # Platforms with `curl`:
 curl -L http://git.io/n-install | bash
 
 # Platforms with `wget`:
 wget -qO- http://git.io/n-install | bash
-```
+``` -->
 
 * Note that any preexisting `n`, Node.js, or io.js installation must be removed before using this installation method.
 * All installation prerequisites are met by default on OSX and some Linux distros; notably, `git` must be installed - see [Installing n](#installing-n) for details.
@@ -57,7 +63,9 @@ See examples [below](#examples), and [Installing n](#installing-n) for prerequis
 
 # Examples
 
+<!-- ACTIVATE THIS ONCE n ITSELF SUPPORTS WGET
 Note: The examples use only `curl` for brevity; to run a given command with `wget` instead, replace `curl -L` with `wget -qO-`.
+-->
 
 * With confirmation prompt to confirm installing to `$HOME/n ` and installing the latest stable Node.js version:
 
@@ -90,29 +98,35 @@ curl -L http://git.io/n-install | N_PREFIX=~/util/n bash -s -- -y stable io:stab
 Among the platforms supported by Node.js / io.js, any Unix-like platform with the following is supported:
 
 * [`bash`](http://www.gnu.org/software/bash/)
-* [`curl`](http://curl.haxx.se/) or [`wget`](http://www.gnu.org/software/wget/)
+* [`curl`](http://curl.haxx.se/)
 * [`git`](http://git-scm.com/)
 * [GNU `make`](http://www.gnu.org/software/make/)
 
 These prerequisites are met by default on OSX and on at least some Linux platforms.  
-What's missing from some by default is `git`, which, however, is easy to install from the respective package managers (e.g., `sudo apt-get install git` on Debian, and `sudo yum install git` on Fedora).
+What's missing from some by default is `git` and/or `curl`, which, however, are easy to install from the respective package managers (e.g., `sudo apt-get install git curl` on Debian, or `sudo yum install git` on Fedora).
 
 Irrespective of the installation method chosen below, no further steps are required if your default shell is either **Bash, Ksh, or Zsh**.  
 For other shells, manual updating of the relevant initialization file is required; detailed instructions are provided during installation.
 
 ## Installation from GitHub
 
+```shell
+curl -L http://git.io/n-install | [N_PREFIX=<dir>] bash [-s -- [-y] [-t] [-y] [version...]]
+```
+
+<!-- ACTIVATE THIS ONCE n ITSELF SUPPORTS wget
 **With `curl`:**
 
 ```shell
-curl -L http://git.io/n-install | [N_PREFIX=<target-dir>] bash [-s -- [-y] [-t] [-y] [version...]]
+curl -L http://git.io/n-install | [N_PREFIX=<dir>] bash [-s -- [-y] [-t] [-y] [version...]]
 ```
 
 **With `wget`:**
 
 ```shell
-wget -qO- http://git.io/n-install | [N_PREFIX=<target-dir>] bash [-s -- [-y] [-t] [-y] [version...]]
+wget -qO- http://git.io/n-install | [N_PREFIX=<dir>] bash [-s -- [-y] [-t] [-y] [version...]]
 ```
+-->
 
 See below for an explanation of the options; `-s --` is required by Bash itself in order to pass options through to the script piped from stdin.
 
@@ -178,8 +192,8 @@ DESCRIPTION
 
 PREREQUISITES
   bash ... to run this script and n itself.
-  curl or wget ... to download helper scripts from GitHub.
-  git ... to clone n's GitHub repository.
+  curl ... to download helper scripts from GitHub and run n itself.
+  git ... to clone n's GitHub repository and update n later.
   GNU make ... to run n's installation procedure.
   
 EXAMPLES
@@ -199,7 +213,8 @@ EXAMPLES
 
 # Updating n
 
-Run `n-update` on demand to update `n` itself; `n-update -y` skips the confirmation prompt.
+Run `n-update` on demand to update `n` itself.  
+`n-update -y` skips the confirmation prompt.
 
 ## Manual updating
 
@@ -209,7 +224,8 @@ If, for some reason, `n-update` doesn't work or isn't available, run the followi
 
 # Uninstalling n
 
-Run `n-uninstall`; `n-uninstall -y` skips the confirmation prompt.
+Run `n-uninstall` to uninstall.  
+`n-uninstall -y` skips the confirmation prompt - **use with caution**.
 
 ## Manual uninstallation
 
@@ -252,6 +268,9 @@ This project gratefully depends on the following open-source components, accordi
 Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
+
+* **[v0.0.3](https://github.com/mklement0/n-install/compare/v0.0.2...v0.0.3)** (2015-06-21):
+  * wget support hidden as long as n itself doesn't suppor it.
 
 * **[v0.0.2](https://github.com/mklement0/n-install/compare/v0.0.1...v0.0.2)** (2015-06-21):
   * wget support added

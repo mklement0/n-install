@@ -381,8 +381,10 @@ unset CDPATH  # to prevent unpredictable `cd` behavior
 [[ -t 1 ]] || kNO_COLOR=1 # turn off colored output if stdout is not connected to a terminal
 
 # Output version number and exit, if requested. Note that the `ver='...'` statement is automatically updated by `make version VER=<newVer>` - DO keep the 'v' suffix in the variable _definition_.
-[[ $1 == '--version' ]] && { ver='v0.0.2'; echo "$kTHIS_NAME ${ver#v}"; exit 0; }
+[[ $1 == '--version' ]] && { ver='v0.0.3'; echo "$kTHIS_NAME ${ver#v}"; exit 0; }
 
+# !! AS OF n 1.3.0, n ITSELF ONLY WORKS WITH curl, NOT ALSO WITH wget.
+# !! Once n also supports wget, mention wget as an alternative in the help text.
 if [[ $1 == '--help' || $1 == '-h' ]]; then
   cat <<EOF
 SYNOPSIS
@@ -433,8 +435,8 @@ DESCRIPTION
 
 PREREQUISITES
   bash ... to run this script and n itself.
-  curl or wget ... to download helper scripts from GitHub.
-  git ... to clone n's GitHub repository.
+  curl ... to download helper scripts from GitHub and run n itself.
+  git ... to clone n's GitHub repository and update n later.
   GNU make ... to run n's installation procedure.
   
 EXAMPLES
@@ -456,10 +458,14 @@ fi
 
 # Check for prerequisites.
 preReqMsg=
-for exe in git make; do
+# !! AS OF n 1.3.0, n ITSELF ONLY WORKS WITH curl, NOT ALSO WITH wget.
+# !! Once n also supports wget, remove 'curl' from this `for` loop and activate
+# !! the curl-OR-wget command below.
+for exe in curl git make; do
   [[ -n $(command -v "$exe") ]] || preReqMsg+="${preReqMsg:+$'\n'}\`$exe\` not found, which is required for operation."
 done
-[[ -n $(command -v curl) || -n $(command -v wget) ]] || preReqMsg+="${preReqMsg:+$'\n'}Neither \`curl\` nor \`wget\` found; one of them is required for operation."
+# !! ACTIVATE THE FOLLOWING ONCE n ITSELF SUPPORTS wget.
+# [[ -n $(command -v curl) || -n $(command -v wget) ]] || preReqMsg+="${preReqMsg:+$'\n'}Neither \`curl\` nor \`wget\` found; one of them is required for operation."
 [[ -z $preReqMsg ]] || die - <<<"$preReqMsg"
 
 # Parse options.
