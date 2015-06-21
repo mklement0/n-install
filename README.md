@@ -10,7 +10,7 @@
 - [Installing n](#installing-n)
   - [Installation from GitHub](#installation-from-github)
   - [Manual installation](#manual-installation)
-  - [Options and background information](#options-and-background-information)
+  - [Installation options](#installation-options)
 - [Updating n](#updating-n)
   - [Manual updating](#manual-updating)
 - [Uninstalling n](#uninstalling-n)
@@ -24,8 +24,6 @@
 
 # n-install &mdash; introduction
 
-[DO NOT USE YET.]
-
 **Installs [`n`](https://github.com/tj/n)**, the **[Node.js](https://nodejs.org/) and [io.js](https://iojs.org/) version manager**, on Unix-like platforms, **without needing to install Node.js or io.js first**.  
 Additionally, installs scripts `n-update` for later on-demand updating of `n`, and `n-uninstall` for uninstalling.
 
@@ -33,6 +31,7 @@ Additionally, installs scripts `n-update` for later on-demand updating of `n`, a
 
 * The installation target is a **dedicated directory**, which **defaults to `~/n`** and can be overridden with environment variable `N_PREFIX`; n itself as well as the active Node.js/io.js version are placed there.
     * When overriding, it is advisable to choose a user location - typically, a subfolder of `~` (at any level) - so as to avoid the need to use `sudo` for installation of global `npm` packages.
+    * Either way, the target directory must either not exist yet or be empty.
     * Using a dedicated directory to hold both `n` and the Node.js/io.js versions greatly simplifies later uninstallation.
 * If your shell is **`bash`, `ksh`, or `zsh`, the relevant shell initialization file is modified**:
     * Environment variable `N_PREFIX` is defined to point to the installation directory.
@@ -56,12 +55,14 @@ wget -qO- http://git.io/n-install | bash
 ``` -->
 
 * Note that any preexisting `n`, Node.js, or io.js installation must be removed before using this installation method.
-* All installation prerequisites are met by default on OSX and some Linux distros; notably, `git` must be installed - see [Installing n](#installing-n) for details.
+* All installation prerequisites are met by default on OSX and some Linux distros; notably, `git` and `curl` must be present - see [Installing n](#installing-n) for details.
 * After installation, **be sure to open a new terminal window** before attempting to use `n` / Node.js / io.js.
 
 See examples [below](#examples), and [Installing n](#installing-n) for prerequisites and installation options.
 
 # Examples
+
+See [Installation options](#installation-options) for details.
 
 <!-- ACTIVATE THIS ONCE n ITSELF SUPPORTS WGET
 Note: The examples use only `curl` for brevity; to run a given command with `wget` instead, replace `curl -L` with `wget -qO-`.
@@ -108,11 +109,14 @@ What's missing from some by default is `git` and/or `curl`, which, however, are 
 Irrespective of the installation method chosen below, no further steps are required if your default shell is either **Bash, Ksh, or Zsh**.  
 For other shells, manual updating of the relevant initialization file is required; detailed instructions are provided during installation.
 
+
 ## Installation from GitHub
 
 ```shell
 curl -L http://git.io/n-install | [N_PREFIX=<dir>] bash [-s -- [-y] [-t] [-y] [version...]]
 ```
+
+After installation, a new terminal window must be opened before using `n` and any installed Node.js / io.js versions.
 
 <!-- ACTIVATE THIS ONCE n ITSELF SUPPORTS wget
 **With `curl`:**
@@ -137,7 +141,7 @@ See below for an explanation of the options; `-s --` is required by Bash itself 
 * Move or symlink it to a directory in your `$PATH`.
 * Invoke `n-install` as detailed below.
 
-## Options and background information
+## Installation options
 
 <!-- DO NOT EDIT THE FENCED CODE BLOCK and RETAIN THIS COMMENT: The fenced code block below is updated by `make update-readme/release` with CLI usage information. -->
 
@@ -213,7 +217,7 @@ EXAMPLES
 
 # Updating n
 
-Run `n-update` on demand to update `n` itself.  
+Run `n-update` on demand to update `n` itself to the latest version.  
 `n-update -y` skips the confirmation prompt.
 
 ## Manual updating
@@ -224,7 +228,7 @@ If, for some reason, `n-update` doesn't work or isn't available, run the followi
 
 # Uninstalling n
 
-Run `n-uninstall` to uninstall.  
+Run `n-uninstall` to uninstall `n` as well as the Node.js / io.js versions that were installed with it.
 `n-uninstall -y` skips the confirmation prompt - **use with caution**.
 
 ## Manual uninstallation
@@ -269,8 +273,5 @@ Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
 
-* **[v0.0.3](https://github.com/mklement0/n-install/compare/v0.0.2...v0.0.3)** (2015-06-21):
-  * wget support hidden as long as n itself doesn't suppor it.
-
-* **[v0.0.2](https://github.com/mklement0/n-install/compare/v0.0.1...v0.0.2)** (2015-06-21):
-  * wget support added
+* **v0.1.0** (2015-06-20):
+  * Initial release.
