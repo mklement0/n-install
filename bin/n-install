@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# !! CAVEAT (hypothetical, for now, because n as of 1.3.0 doesn't support FreeBSD, given that binary Node.js packages aren't available for it): 
+# !! On FreeBSD, process substitution (<(...)) is by default NOT ENABLED- AVOID PROCESS SUBSTITUTIONS.
+
 #
 # Script-global constants
 # 
@@ -381,7 +384,7 @@ unset CDPATH  # to prevent unpredictable `cd` behavior
 [[ -t 1 ]] || kNO_COLOR=1 # turn off colored output if stdout is not connected to a terminal
 
 # Output version number and exit, if requested. Note that the `ver='...'` statement is automatically updated by `make version VER=<newVer>` - DO keep the 'v' suffix in the variable _definition_.
-[[ $1 == '--version' ]] && { ver='v0.1.2'; echo "$kTHIS_NAME ${ver#v}"; exit 0; }
+[[ $1 == '--version' ]] && { ver='v0.1.3-0'; echo "$kTHIS_NAME ${ver#v}"; exit 0; }
 
 # !! AS OF n 1.3.0, n ITSELF ONLY WORKS WITH curl, NOT ALSO WITH wget.
 # !! Once n also supports wget, mention wget as an alternative in the help text.
@@ -461,11 +464,22 @@ preReqMsg=
 # !! AS OF n 1.3.0, n ITSELF ONLY WORKS WITH curl, NOT ALSO WITH wget.
 # !! Once n also supports wget, remove 'curl' from this `for` loop and activate
 # !! the curl-OR-wget command below.
-for exe in curl git make; do
+for exe in curl git; do
   [[ -n $(command -v "$exe") ]] || preReqMsg+="${preReqMsg:+$'\n'}\`$exe\` not found, which is required for operation."
 done
+#
 # !! ACTIVATE THE FOLLOWING ONCE n ITSELF SUPPORTS wget.
 # [[ -n $(command -v curl) || -n $(command -v wget) ]] || preReqMsg+="${preReqMsg:+$'\n'}Neither \`curl\` nor \`wget\` found; one of them is required for operation."
+#
+# !! n's own installation procedure, `make install`, unfortunately currently (1.3.0) requires GNU make (due to use of conditional assignment `?=`), even though it would be simple to make it 
+# !! POSIX-compliant; for now, we therefore explicitly require GNU make.
+# !! However, this is a hypothetical concern, because, as of n 1.3.0, n only works with *prebuilt* binaries downloadable from https://nodejs.org/dist/, and, as of Node.js v0.12.4,
+# !! prebuilt binaries only exist for Linux, Darwin (OSX) (and Windows) - if building Node.js from source were supported, however, GNU make would be required for that, too.
+for makeExe in make gmake; do
+  "$makeExe" --version 2>/dev/null | grep -Fq "GNU Make" && break
+  [[ $makeExe == 'make' ]] && continue
+  preReqMsg+="${preReqMsg:+$'\n'}GNU Make not found, which is required for operation."$'\n'"On FreeBSD and PC-BSD, for instance, you can download it with \`sudo pkg install gmake\`."
+done
 [[ -z $preReqMsg ]] || die - <<<"$preReqMsg"
 
 # Parse options.
@@ -641,7 +655,7 @@ echo "-- Cloning $kN_REPO_URL to '$nRepoDir'..."
 git clone -q "$kN_REPO_URL" "$nRepoDir/" >/dev/null || die "Aborting, because cloning n's GitHub repository into '$nRepoDir' failed."
 
 echo "-- Running local n installation to '$nBinDir'..."
-(cd "$nRepoDir" && PREFIX="$N_PREFIX" make install >/dev/null) || die "Aborting, because n's own installation procedure failed."
+(cd "$nRepoDir" && PREFIX="$N_PREFIX" "$makeExe" install >/dev/null) || die "Aborting, because n's own installation procedure failed."
 
 # Modify the relevant shell initialization file.
 initFile=$(modifyShellInitFile) || die
