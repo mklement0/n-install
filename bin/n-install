@@ -477,7 +477,7 @@ done
 # !! prebuilt binaries only exist for Linux, Darwin (OSX) (and Windows) - if building Node.js from source were supported, however, GNU make would be required for that, too.
 for makeExe in make gmake; do
   "$makeExe" --version 2>/dev/null | grep -Fq "GNU Make" && break
-  [[ $makeExe == 'make' ]] && continue
+  [[ $makeExe == 'make' ]] && continue # if 'make' isn't GNU Make, try again with 'gmake'.
   preReqMsg+="${preReqMsg:+$'\n'}GNU Make not found, which is required for operation."$'\n'"On FreeBSD and PC-BSD, for instance, you can download it with \`sudo pkg install gmake\`."
 done
 [[ -z $preReqMsg ]] || die - <<<"$preReqMsg"

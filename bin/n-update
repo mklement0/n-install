@@ -174,9 +174,21 @@ shift $((OPTIND - 1)) # Skip the already-processed arguments (options).
 [[ -n $N_PREFIX ]] || die "Cannot locate n, because environment variable N_PREFIX is not defined."
 
 # Check for prerequisites.
-for exe in git make; do
-  [[ -n $(command -v "$exe") ]] || die "Required binary \`$exe\` not found."
+preReqMsg=
+for exe in git; do
+  [[ -n $(command -v "$exe") ]] || preReqMsg+="Required binary \`$exe\` not found."
 done
+# !! n's own installation procedure, `make install`, unfortunately currently (1.3.0) requires GNU make (due to use of conditional assignment `?=`), even though it would be simple to make it 
+# !! POSIX-compliant; for now, we therefore explicitly require GNU make.
+# !! However, this is a hypothetical concern, because, as of n 1.3.0, n only works with *prebuilt* binaries downloadable from https://nodejs.org/dist/, and, as of Node.js v0.12.4,
+# !! prebuilt binaries only exist for Linux, Darwin (OSX) (and Windows) - if building Node.js from source were supported, however, GNU make would be required for that, too.
+for makeExe in make gmake; do
+  "$makeExe" --version 2>/dev/null | grep -Fq "GNU Make" && break
+  [[ $makeExe == 'make' ]] && continue # if 'make' isn't GNU Make, try again with 'gmake'.
+  preReqMsg+="${preReqMsg:+$'\n'}GNU Make not found, which is required for operation."$'\n'"On FreeBSD and PC-BSD, for instance, you can download it with \`sudo pkg install gmake\`."
+done
+[[ -z $preReqMsg ]] || die - <<<"$preReqMsg"
+
 
 
 nDir="$N_PREFIX/n"
@@ -207,6 +219,6 @@ target="$nExe"
 diff "$src" "$target" >/dev/null && { echo "(Installed version $("$nExe" --version) is up-to-date.)"; exit 0; }
 
 # Invoke the Makefile installation task, which simply copies bin/n to ${N_PREFIX}/bin.
-PREFIX="$N_PREFIX" make install || die
+PREFIX="$N_PREFIX" "$makeExe" install || die
 
 echo "-- n successfully updated to version $("$nExe" --version)."
