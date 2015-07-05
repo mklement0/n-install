@@ -27,6 +27,14 @@
 **Installs [`n`](https://github.com/tj/n)**, the **[Node.js](https://nodejs.org/) and [io.js](https://iojs.org/) version manager**, on Unix-like platforms, **without needing to install Node.js or io.js first**.  
 Additionally, installs scripts `n-update` for later on-demand updating of `n`, and `n-uninstall` for uninstalling.
 
+The simplest case is **installation of `n` with confirmation prompt**, with subsequent **installation of the latest stable Node.js version**:
+
+```shell
+curl -L http://git.io/n-install | bash
+```
+
+This is by far **the simplest way to get started with both `n` and Node.js** - even if you're looking to install only the latest stable Node.js version, with no (immediate) plans to install _multiple_ versions.
+
 `n` is installed as follows:
 
 * The installation target is a **dedicated directory**, which **defaults to `~/n`** and can be overridden with environment variable `N_PREFIX`; n itself as well as the active Node.js/io.js version are placed there.
@@ -39,12 +47,6 @@ Additionally, installs scripts `n-update` for later on-demand updating of `n`, a
     * For other shells, these modification must be performed manually; instructions are provided during installation.
 * By default, the latest stable Node.js version is installed; you can suppress that or even specify multiple Node.js/io.js versions to install.
 
-The simplest case is **installation of `n` with confirmation prompt**, with subsequent **installation of the latest stable Node.js version**:
-
-```shell
-curl -L http://git.io/n-install | bash
-```
-
 <!-- ACTIVATE THIS ONCE n ITSELF SUPPORTS WGET
 ```shell
 # Platforms with `curl`:
@@ -56,7 +58,7 @@ wget -qO- http://git.io/n-install | bash
 
 * Note that any preexisting `n`, Node.js, or io.js installation must be removed before using this installation method.
 * All installation prerequisites are met by default on OSX and some Linux distros; notably, `git` and `curl` must be present - see [Installing n](#installing-n) for details.
-* After installation, **be sure to open a new terminal window** before attempting to use `n` / Node.js / io.js.
+* After installation, **be sure to open a new terminal tab or window** before attempting to use `n` / Node.js / io.js.
 
 See examples [below](#examples), and [Installing n](#installing-n) for prerequisites and installation options.
 
@@ -96,15 +98,16 @@ curl -L http://git.io/n-install | N_PREFIX=~/util/n bash -s -- -y
 
 **Supported platforms and prerequisites**
 
-Among the platforms supported by Node.js / io.js, any Unix-like platform with the following is supported:
+Among the platforms supported by `n`, any Unix-like platform with the following is supported:
 
 * [`bash`](http://www.gnu.org/software/bash/)
 * [`curl`](http://curl.haxx.se/)
 * [`git`](http://git-scm.com/)
 * [GNU `make`](http://www.gnu.org/software/make/)
 
-These prerequisites are met by default on OSX and on at least some Linux platforms.  
+These prerequisites are met by default on OSX and on at least some Linux platforms.
 What's missing from some by default is `git` and/or `curl`, which, however, are easy to install from the respective package managers (e.g., `sudo apt-get install git curl` on Debian, or `sudo yum install git` on Fedora).
+`bash` and `curl` are also required by `n` itself.
 
 Irrespective of the installation method chosen below, no further steps are required if your default shell is either **Bash, Ksh, or Zsh**.  
 For other shells, manual updating of the relevant initialization file is required; detailed instructions are provided during installation.
@@ -272,6 +275,10 @@ This project gratefully depends on the following open-source components, accordi
 Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
+
+* **[v0.1.3](https://github.com/mklement0/n-install/compare/v0.1.2...v0.1.3)** (2015-07-04):
+  * [robustness] If `make` is found not to be _GNU_ `make`, an attempt is made to use `gmake` instead.
+  * [doc] `--version` now also outputs the project's home URL; read-me improvements.
 
 * **[v0.1.2](https://github.com/mklement0/n-install/compare/v0.1.1...v0.1.2)** (2015-06-21):
   * [doc] Examples revised.
