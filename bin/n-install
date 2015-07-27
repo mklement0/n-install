@@ -254,7 +254,7 @@ modifyShellInitFile() {
         warn - <<EOF
 Automatic modification of the initialization file for shell
 $SHELL is not supported.
-For n and the Node.js/io.js versions it manages to work correctly,
+For n and the Node.js/io.js versions managed by it to work correctly,
 you must MANUALLY ADD THE EQUIVALENT OF THE FOLLOWING TO YOUR SHELL'S
 INITIALIZATION FILE:
 
@@ -384,7 +384,7 @@ unset CDPATH  # to prevent unpredictable `cd` behavior
 [[ -t 1 ]] || kNO_COLOR=1 # turn off colored output if stdout is not connected to a terminal
 
 # Output version number and exit, if requested. Note that the `ver='...'` statement is automatically updated by `make version VER=<newVer>` - DO keep the 'v' suffix in the variable _definition_.
-[[ $1 == '--version' ]] && { ver='v0.1.3'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://git.io/n-install-repo'; exit 0; }
+[[ $1 == '--version' ]] && { ver='v0.1.4'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://git.io/n-install-repo'; exit 0; }
 
 # !! AS OF n 1.3.0, n ITSELF ONLY WORKS WITH curl, NOT ALSO WITH wget.
 # !! Once n also supports wget, mention wget as an alternative in the help text.
@@ -745,17 +745,28 @@ if (( toInstallCount > 0 )); then
 
 fi
 
+# Report success and provide further instructions.
+# !! Do not use unbalanced single quotes - such as an apostrophe - in the embedded
+# !! here-docs below, as they inexplicably break the enclosing here-document in Bash 3.x.
 cat <<EOF
 === n successfully installed.
-  $( (( installedCount > 0 )) && 
-   echo "The active Node.js/io.js version is: $("$nBinDir"/node --version)" ||
-   echo "Run \`n stable\` to install the latest stable Node.js version."
-  )
+$( (( installedCount > 0 )) && 
+  echo "  The active Node.js/io.js version is: $("$nBinDir"/node --version)" ||
+  echo "  Run \`n stable\` to install the latest stable Node.js version."
+)
+
   Run \`n -h\` for help.
   To update n later, run \`$kUPDATE_SCRIPT\`.
   To uninstall, run \`$kUNINSTALL_SCRIPT\`.
 
-  IMPORTANT: OPEN A NEW TERMINAL WINDOW before using n and Nodejs/io.js.
+$( [[ -n $initFile ]] && cat <<EOF2 || cat <<EOF3
+  IMPORTANT: OPEN A NEW TERMINAL TAB/WINDOW or run \`. ${initFile/#$HOME/~}\`
+             before using n and Nodejs/io.js.
+EOF2
+  IMPORTANT: Modify your shell initialization file as described above
+             before using n and Node.js/io.js.
+EOF3
+)
 ===
 EOF
 

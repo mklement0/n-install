@@ -226,7 +226,7 @@ _update-readme-usage:
 	 newText="$${CLI_HELP_CMD_DISPLAY[@]}"$$'\n\n'"$$( "$${CLI_HELP_CMD[@]}" )" || { echo "Failed to update read-me chapter: usage: invoking CLI help failed: $${CLI_HELP_CMD[@]}" >&2; exit 1; }; \
 	 newText="$${newText//\$$/$$\$$}"; \
 	 newText="$${newText//~/\~}"; \
-	 replace --count --quiet --multiline=false '(\n)(<!-- DO NOT EDIT .*usage.*?-->\n\s*?\n```\n\$$ )[\s\S]*?(\n```\n|$$)' '$$1$$2'"$$newText"'$$3' README.md | grep -Fq ' (1)' || { echo "Failed to update read-me chapter: usage." >&2; exit 1; }
+	 replace --count --quiet --multiline=false '(\n)(<!-- DO NOT EDIT .*usage.*?-->\n\s*?\n```nohighlight\n\$$ )[\s\S]*?(\n```\n|$$)' '$$1$$2'"$$newText"'$$3' README.md | grep -Fq ' (1)' || { echo "Failed to update read-me chapter: usage." >&2; exit 1; }
 # !! REGRETTABLY, the ``` sequences in the line above break syntax coloring for the rest of the file in Sublime Text 3 - ?? unclear, how to work around that.
 
 #  - Replaces the '## License' chapter with the contents of LICENSE.md

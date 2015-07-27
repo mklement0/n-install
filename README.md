@@ -1,4 +1,4 @@
-[![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/mklement0/n-install/blob/master/LICENSE.md)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/mklement0/n-install/blob/master/LICENSE.md)
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -116,7 +116,7 @@ For other shells, manual updating of the relevant initialization file is require
 ## Installation from GitHub
 
 ```shell
-curl -L http://git.io/n-install | [N_PREFIX=<dir>] bash [-s -- [-y] [-t] [-y] [version...]]
+curl -L http://git.io/n-install | [N_PREFIX=<dir>] bash [-s -- [-y] [version...]]
 ```
 
 After installation, a new terminal window must be opened before using `n` and any installed Node.js / io.js versions.
@@ -125,13 +125,13 @@ After installation, a new terminal window must be opened before using `n` and an
 **With `curl`:**
 
 ```shell
-curl -L http://git.io/n-install | [N_PREFIX=<dir>] bash [-s -- [-y] [-t] [-y] [version...]]
+curl -L http://git.io/n-install | [N_PREFIX=<dir>] bash [-s -- [-y] [version...]]
 ```
 
 **With `wget`:**
 
 ```shell
-wget -qO- http://git.io/n-install | [N_PREFIX=<dir>] bash [-s -- [-y] [-t] [-y] [version...]]
+wget -qO- http://git.io/n-install | [N_PREFIX=<dir>] bash [-s -- [-y] [version...]]
 ```
 -->
 
@@ -148,7 +148,7 @@ See below for an explanation of the options; `-s --` is required by Bash itself 
 
 <!-- DO NOT EDIT THE FENCED CODE BLOCK and RETAIN THIS COMMENT: The fenced code block below is updated by `make update-readme/release` with CLI usage information. -->
 
-```
+```nohighlight
 $ n-install --help
 
 SYNOPSIS
@@ -275,6 +275,9 @@ This project gratefully depends on the following open-source components, accordi
 Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
+
+* **[v0.1.4](https://github.com/mklement0/n-install/compare/v0.1.3...v0.1.4)** (2015-07-27):
+  * [enhancement] Success message now mentions manually re-sourcing the shell initialization file as an alternative to opening a new terminal tab/window.
 
 * **[v0.1.3](https://github.com/mklement0/n-install/compare/v0.1.2...v0.1.3)** (2015-07-04):
   * [robustness] If `make` is found not to be _GNU_ `make`, an attempt is made to use `gmake` instead.
