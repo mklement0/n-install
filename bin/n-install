@@ -384,7 +384,7 @@ unset CDPATH  # to prevent unpredictable `cd` behavior
 [[ -t 1 ]] || kNO_COLOR=1 # turn off colored output if stdout is not connected to a terminal
 
 # Output version number and exit, if requested. Note that the `ver='...'` statement is automatically updated by `make version VER=<newVer>` - DO keep the 'v' suffix in the variable _definition_.
-[[ $1 == '--version' ]] && { ver='v0.1.5'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://git.io/n-install-repo'; exit 0; }
+[[ $1 == '--version' ]] && { ver='v0.1.6'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://git.io/n-install-repo'; exit 0; }
 
 # !! AS OF n 1.3.0, n ITSELF ONLY WORKS WITH curl, NOT ALSO WITH wget.
 # !! Once n also supports wget, mention wget as an alternative in the help text.
@@ -394,7 +394,7 @@ SYNOPSIS
   $kTHIS_NAME [-t] [-y] [<version>...]
 
 DESCRIPTION
-  Directly nstalls n, the Node.js version manager, which bypasses the need to
+  Directly installs n, the Node.js version manager, which bypasses the need to
   manually install a Node.js version first.
 
   Additionally, installs $kUPDATE_SCRIPT for updating n,
@@ -403,7 +403,7 @@ DESCRIPTION
   On successful installation of n, the specified Node.js/io.js <version>(s)
   are installed; by default, this is the latest stable Node.js version;
   To opt out, specify '-' as the only version argument.
-  'stable' installs the latest stable version, available, 'latest' the latest
+  'stable' installs the latest stable version; 'latest' the latest
   available overall; otherwise, specify an explicit version numer, such as
   '0.12' or '0.10.35'.
   To install io.js versions, prefix the version with 'io:'; e.g., 'io:stable'.

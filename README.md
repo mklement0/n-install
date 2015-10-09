@@ -148,7 +148,7 @@ SYNOPSIS
   n-install [-t] [-y] [<version>...]
 
 DESCRIPTION
-  Directly nstalls n, the Node.js version manager, which bypasses the need to
+  Directly installs n, the Node.js version manager, which bypasses the need to
   manually install a Node.js version first.
 
   Additionally, installs n-update for updating n,
@@ -157,7 +157,7 @@ DESCRIPTION
   On successful installation of n, the specified Node.js/io.js <version>(s)
   are installed; by default, this is the latest stable Node.js version;
   To opt out, specify '-' as the only version argument.
-  'stable' installs the latest stable version, available, 'latest' the latest
+  'stable' installs the latest stable version; 'latest' the latest
   available overall; otherwise, specify an explicit version numer, such as
   '0.12' or '0.10.35'.
   To install io.js versions, prefix the version with 'io:'; e.g., 'io:stable'.
@@ -270,6 +270,9 @@ This project gratefully depends on the following open-source components, accordi
 Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
+
+* **[v0.1.6](https://github.com/mklement0/n-install/compare/v0.1.5...v0.1.6)** (2015-10-08):
+  * [doc] CLI usage-help corrections.
 
 * **[v0.1.5](https://github.com/mklement0/n-install/compare/v0.1.4...v0.1.5)** (2015-08-09):
   * [doc] Improved post-installation instructions.

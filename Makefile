@@ -24,7 +24,7 @@ list:
 	@$(MAKE) -pRrn -f $(lastword $(MAKEFILE_LIST)) : 2>/dev/null | awk -v RS= -F: '/^# File/,/^# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | grep -Ev -e '^[^[:alnum:]]' -e '^$@$$' | sort
 
 # Open this package's online repository URL (typically, on GitHub) in the default browser.
-# Note: Currently only supports OSX and Debian-based platforms.
+# Note: Supported on OSX and Freedesktop-compliant systems, which includes many Linux and BSD variants.
 .PHONY: browse
 browse:
 	@exe=; url=`json -f package.json repository.url` || exit; \
@@ -34,7 +34,7 @@ browse:
 	 "$$exe" "$$url"
 
 # Open this package's page in the npm registry.
-# Note: Currently only supports OSX and Debian-based platforms.
+# Note: Supported on OSX and Freedesktop-compliant systems, which includes many Linux and BSD variants.
 .PHONY: browse-npm
 browse-npm:
 	@exe=; [[ `json -f package.json private` == 'true' ]] && { echo "This package is marked private (not for publication in the npm registry)." >&2; exit 1; }; \
@@ -129,8 +129,11 @@ release: _need-origin _need-npm-credentials _need-master-branch _need-clean-ws-o
 	@newVer=`json -f package.json version` || exit; [[ $$newVer == *-* ]] && isPreRelease=1 || isPreRelease=0; \
 	 echo '-- Opening changelog...'; \
 	 $(EDITOR) CHANGELOG.md; \
-	 { grep -Eq "\bv$${newVer//./\.}[^[:digit:]-]" CHANGELOG.md && ! grep -E '(^|[[:blank:]])\?\?\?([[:blank:]]|$$)' CHANGELOG.md; } || { echo "ABORTED: No changelog entries provided for new version v$$newVer." >&2; exit 2; }; \
-	 commitMsg="v$$newVer"$$'\n'"`sed -n '/\*\*'"v$$newVer"'\*\*/,/^\* /p' CHANGELOG.md | sed '1d;$$d'`"; \
+	 changelogEntries=`sed -En -e '/\*\*\[?'"v$$newVer"'(\*|\])/,/^\* / { s///; t' -e 'p; }' CHANGELOG.md`; \
+	 [[ -n $$changelogEntries ]] || { echo "ABORTED: No changelog entries provided for new version v$$newVer." >&2; exit 2; }; \
+	 commitMsg="v$$newVer"$$'\n'"$$changelogEntries"; \
+	 echo "-- Updating documentation, if applicable..."; \
+	 $(MAKE) -f $(lastword $(MAKEFILE_LIST)) update-doc || exit; \
 	 echo "-- Updating README.md..."; \
 	 $(MAKE) -f $(lastword $(MAKEFILE_LIST)) update-license-year update-readme || exit; \
 	 echo '-- Opening README.md for final inspection...'; \
@@ -166,30 +169,78 @@ update-readme: _update-readme-usage _update-readme-license _update-readme-depend
 	@[[ '$(MAKECMDGOALS)' == 'update-readme' ]] && grep -E '(^|[[:blank:]])\?\?\?([[:blank:]]|$$)' README.md && echo "WARNING: README.md still contains '???', the placeholder for missing information." >&2; \
 	 echo "-- README.md updated."
 
-# Updates the TOC in README.md - there is *generally* no need to call this *directly*, because the TOC is updated as part of the 'release' target.
-# However, when *toggling* the inclusion of a TOC, this target is called *directly* to:
-#   - insert a TOC after just having turned inclusion ON
-#   - remove an existing TOC after just having turned inclusion OFF
+# If turned on: Updates the TOC in README.md - there is *generally* no need to call this *directly*, because the TOC is updated as part of the 'update-readme' target and, indirectly, the 'release' target.
+# If this feature is turned off, this is a no-op.
 # !! Note that a \n is prepended to the title to work around a npmjs.com rendering bug: without it, doctoc's comments would directly abut the title, which unexepctedly disables Markdown rendering (as of 31 May 2015).
 .PHONY: update-toc
 update-toc:
-	@if [[ "`json -f package.json net_same2u.make_pkg.tocOn`" == 'true' ]]; then \
-	   doctoc --title $$'\n'"`json -f package.json net_same2u.make_pkg.tocTitle`" README.md >/dev/null || exit; \
-	   [[ '$(MAKECMDGOALS)' == 'update-toc' ]] && echo "TOC in README.md updated." || :; \
-	 elif [[ '$(MAKECMDGOALS)' == 'update-toc' ]]; then \
-	   replace --count --multiline=false '<!-- START doctoc.[^>]*-->[\s\S]*?<!-- END doctoc[^>]*-->\n*' '' README.md | grep -Fq ' (1)' && \
-	     echo "TOC removed from README.md." || \
-	     echo "WARNING: Tried to remove TOC from README.md, but found none." >&2; \
-	 fi
+	@[[ `json -f package.json net_same2u.make_pkg.tocOn` == 'true' ]] || { [[ '$(MAKECMDGOALS)' == 'update-toc' ]] && echo "WARNING: TOC generation is currently turned OFF. Use 'make toggle-toc' to activate." >&2; exit 0; }; \
+	 doctoc --title $$'\n'"`json -f package.json net_same2u.make_pkg.tocTitle`" README.md >/dev/null || exit; \
+	 [[ '$(MAKECMDGOALS)' == 'update-toc' ]] && echo "-- TOC in README.md updated." || :; \
 
-.PHONY: toc
-toc:
-	@isOn=$$([[ "`json -f package.json net_same2u.make_pkg.tocOn`" == 'true' ]] && printf 1 || printf 0); \
+# Note: For now, generating documentation is only supported for CLIs.
+.PHONY: update-doc
+update-doc: update-man
+
+# If turned on: Extracts the Markdown-formatted man-page source assumed to be output by this package's CLI 
+# with --man-source and:
+#  - creates a man page (in ROFF format) in ./man/<cli>.1 with marked-man
+#  - extracts the Markdown source to ./doc/<cli>.md.
+# If this package has no CLI or the feature is turned off, this is a no-op.
+.PHONY: update-man
+update-man: 
+	@read -r cliName cliPath < <(json -f package.json bin | json -Ma key value | head -n 1) || { [[ '$(MAKECMDGOALS)' == 'update-man' ]] && echo "WARNING: Nothing to do; no CLI is defined for this package." >&2; exit 0; }; \
+	 [[ `json -f package.json net_same2u.make_pkg.manOn` == 'true' ]] || { [[ '$(MAKECMDGOALS)' == 'update-man' ]] && echo "WARNING: man-page creation is currently turned OFF. Use 'make toggle-man' to activate." >&2; exit 0; }; \
+	 ver='v'$$(json -f package.json version) || exit; \
+	 mkdir -p doc man; \
+	 printf '<!-- DO NOT EDIT THIS FILE: It is auto-generated by `make update-man` -->\n\n' > doc/"$$cliName".md; \
+	 "$$cliPath" --man-source >> doc/"$$cliName".md || { printf "ERROR: Failed to extract man-page source.\nPlease ensure that '$$cliName --man-source' outputs the Markdown-formatted man-page source.\n" | fold -s >&2; exit 1; }; \
+	 "$$cliPath" --man-source | marked-man --version "$$ver" > man/"$$cliName".1 || { echo "Do you need to install marked-man (npm install marked-man --save-dev)?" | fold -s >&2; exit 1; }; \
+	 [[ '$(MAKECMDGOALS)' == 'update-man' ]] && echo "-- 'doc/$$cliName.md' and 'man/$$cliName.1' updated."$$'\n'"To view the latter as a man page, run: man man/$$cliName.1"$$'\n'"To update and view in one step, run: make view-man" || :
+
+# If man-page creation is turned on: recreate the man page and view it with `man`.
+.PHONY: view-man
+view-man: update-man
+	@manfile=`json -f package.json man`; [[ -n $$manfile ]] || { echo "ERROR: No 'man' property found in 'package.json'." >&2; exit 2; }; \
+	 man "$$manfile"
+
+# Toggles inclusion of an auto-updating TOC in README.md via doctoc.
+.PHONY: toggle-toc
+toggle-toc:
+	@isOn=$$([[ `json -f package.json net_same2u.make_pkg.tocOn` == 'true' ]] && printf 1 || printf 0); \
 	 nowState=`(( isOn )) && printf 'ON' || printf 'OFF'`; otherState=`(( isOn )) && printf 'OFF' || printf 'ON'`; \
 	 echo "Inclusion of an auto-updating TOC for README.md is currently $$nowState."; \
 	 read -re -p "Turn it $$otherState (y/N)?: " response && [[ "$$response" =~ [yY] ]] || { exit 0; }; \
-	 json -I -f package.json -e 'this.net_same2u || (this.net_same2u  = {}); this.net_same2u.make_pkg || (this.net_same2u.make_pkg = {}); this.net_same2u.make_pkg.tocOn = '`(( isOn )) && printf 'false' || printf 'true'`'; this.net_same2u.make_pkg.tocTitle || (this.net_same2u.make_pkg.tocTitle = "**Contents**")'; \
-	 $(MAKE) -f $(lastword $(MAKEFILE_LIST)) update-toc || exit
+	 json -I -f package.json -e 'this.net_same2u || (this.net_same2u  = {}); this.net_same2u.make_pkg || (this.net_same2u.make_pkg = {}); this.net_same2u.make_pkg.tocOn = '`(( isOn )) && printf 'false' || printf 'true'`'; this.net_same2u.make_pkg.tocTitle || (this.net_same2u.make_pkg.tocTitle = "**Contents**")' || exit; \
+	 if (( isOn )); then \
+	 	 echo "NOTE: To be safe, no attempt was made to remove any existing TOC from README.md, if present." | fold -s >&2; \
+	 else \
+	 	 echo "-- Automatic TOC generation for README.md activated."; \
+	 	 printf "Run 'make update-toc' to insert a TOC now.\n'make update-readme' and 'make release' will now update it automatically.\n" | fold -s; \
+	 fi
+
+# Toggles generation of a man page via marked-man, based on a Markdown-formatted document
+# that the package's CLI must output with --man-source.
+.PHONY: toggle-man
+toggle-man:
+	@isOn=$$([[ `json -f package.json net_same2u.make_pkg.manOn` == 'true' ]] && printf 1 || printf 0); \
+	 nowState=`(( isOn )) && printf 'ON' || printf 'OFF'`; otherState=`(( isOn )) && printf 'OFF' || printf 'ON'`; \
+	 echo "Generating a man page for this package's CLI is currently $$nowState."; \
+	 read -re -p "Turn it $$otherState (y/N)?: " response && [[ "$$response" =~ [yY] ]] || { exit 0; }; \
+	 if (( ! isOn )); then \
+	 	 read -r cliName cliPath < <(json -f package.json bin | json -Ma key value | head -n 1); \
+	 	 [[ -n $$cliName ]] || { echo "ERROR: No CLI declared in 'package.json'; please declare a CLI via the 'bin' property and try again." | fold -s >&2; exit 1; }; \
+	 fi; \
+	 json -I -f package.json -e 'this.net_same2u || (this.net_same2u = {}); this.net_same2u.make_pkg || (this.net_same2u.make_pkg = {}); this.net_same2u.make_pkg.manOn = '`(( isOn )) && printf 'false' || printf 'true'` || exit; \
+	 if (( isOn )); then \
+	 	 echo "-- Man-page creation is now OFF."; \
+	 	 echo "NOTE: To be safe, a 'man' property, if present, was not removed from 'package.json', and no attempt was made to uninstall the 'marked-man' package, if present. Please make required changes manually." | fold -s >&2; \
+	 else \
+	 	 [[ -n `json -f package.json devDependencies.marked-man` ]] || { echo "-- Installing marked-man as a dev. dependency..."; npm install --save-dev marked-man || exit; }; \
+	 	 [[ -n `json -f package.json man` ]] && { echo "NOTE: Retaining existing 'man' property in 'package.json'." >&2; } || \
+	 	                                        { json -I -f package.json -e "this.man = \"./man/$$cliName.1\"" || exit; }; \
+	 	 echo "-- Man-page creation is now ON."; echo "Run 'make update-man' to generate the man page now."$$'\n'"Note that '$$cliName --man-source' must output the man-page source in Markdown format for this to work." | fold -s; \
+	 fi
 
 
 # Updates LICENSE.md if the stated calendar year (e.g., '2015') / the end point in a calendar-year range (e.g., '2014-2015')
