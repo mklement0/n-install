@@ -24,7 +24,7 @@
 
 # n-install &mdash; introduction
 
-**Installs [`n`](https://github.com/tj/n)**, the **[Node.js](https://nodejs.org/) and [io.js](https://iojs.org/) version manager**, on Unix-like platforms, **without needing to install Node.js or io.js first**.  
+**Installs [`n`](https://github.com/tj/n)**, the **[Node.js](https://nodejs.org/) version manager**, on Unix-like platforms, **without needing to install Node.js first**.  
 Additionally, installs scripts `n-update` for later on-demand updating of `n`, and `n-uninstall` for uninstalling.
 
 The simplest case is **installation of `n` with confirmation prompt**, with subsequent **installation of the latest stable Node.js version**:
@@ -37,18 +37,18 @@ This is by far **the simplest way to get started with both `n` and Node.js** - e
 
 `n` is installed as follows:
 
-* The installation target is a **dedicated directory**, which **defaults to `~/n`** and can be overridden with environment variable `N_PREFIX`; n itself as well as the active Node.js/io.js version are placed there.
+* The installation target is a **dedicated directory**, which **defaults to `~/n`** and can be overridden with environment variable `N_PREFIX`; n itself as well as the active Node.js version are placed there.
     * When overriding, it is advisable to choose a user location - typically, a subfolder of `~` (at any level) - so as to avoid the need to use `sudo` for installation of global `npm` packages.
     * Either way, the target directory must either not exist yet or be empty.
-    * Using a dedicated directory to hold both `n` and the Node.js/io.js versions greatly simplifies later uninstallation.
+    * Using a dedicated directory to hold both `n` and the Node.js versions greatly simplifies later uninstallation.
 * If your shell is **`bash`, `ksh`, or `zsh`, the relevant shell initialization file is modified**:
     * Environment variable `N_PREFIX` is defined to point to the installation directory.
     * Directory `$N_PREFIX/bin` is appended to the `$PATH`, unless already present.
     * For other shells, these modification must be performed manually; instructions are provided during installation.
-* By default, the latest stable Node.js version is installed; you can suppress that or even specify multiple Node.js/io.js versions to install.
-* Note that any preexisting `n`, Node.js, or io.js installation must be removed before using this installation method.
+* By default, the latest stable Node.js version is installed; you can suppress that or even specify multiple Node.js versions to install.
+* Note that any preexisting `n`, Node.js installation must be removed before using this installation method.
 * All installation prerequisites are met by default on OSX and some Linux distros; notably, `git` and `curl` must be present - see [Installing n](#installing-n) for details.
-* After installation, **be sure to open a new terminal tab or window or reload your shell initialization file** before attempting to use `n` / Node.js / io.js - see 
+* After installation, **be sure to open a new terminal tab or window or reload your shell initialization file** before attempting to use `n` / Node.js - see 
   
 See examples [below](#examples), and [Installing n](#installing-n) for prerequisites and installation options.
 
@@ -72,10 +72,10 @@ curl -L http://git.io/n-install | bash
 curl -L http://git.io/n-install | bash -s -- -y
 ```
 
-* Automated installation to the default location, with subsequent installation of the latest stable Node.js and io.js versions, as well as the latest 0.10.x Node.js version:
+* Automated installation to the default location, with subsequent installation of the latest stable Node.js version, as well as the latest 0.10.x release:
 
 ```shell
-curl -L http://git.io/n-install | bash -s -- -y stable io:stable 0.10
+curl -L http://git.io/n-install | bash -s -- -y stable stable 0.10
 ```
 
 * Automated installation to custom location `~/util/n`, with subsequent installation of the latest stable Node.js version:
@@ -110,23 +110,25 @@ curl -L http://git.io/n-install | [N_PREFIX=<dir>] bash [-s -- [-y] [<version>..
 
 See below for an explanation of the options; `-s --` is required by Bash itself in order to pass options through to the script piped from stdin.
 
-**Before you can use `n` and any installed Node.js / io.js versions**, you must **open a new terminal tab/window or reload your shell initialization file**.  
+**Before you can use `n` and any installed Node.js versions**, you must **open a new terminal tab/window _or_ reload your shell initialization file**.  
 For instance, if your shell is Bash and you're on **Linux**, you'd use **`. ~/.bashrc`**; on **OSX**, you'd use **`. ~/.bash_profile`**;
 the installer will tell you the specific file to reload on successful installation.  
 
-_Caveat_: If you **reload the initialization file from a _script_** (rather than interactively) - so that you can make use of `n` or Node.js/io.js in the remainder of the script, e.g.,
+_Caveat_: If you **reload the initialization file from a _script_** (rather than interactively) - so that you can make use of `n` or Node.js in the remainder of the script, e.g.,
 in order to preinstall global npm packages - 
-**be sure that the initialization file doesn't contain a check that prevents reloading from a _non-interactive_ shell**.  
-For instance, sadly, **Debian** and **Ubuntu** come with a default `~/.bashrc` file that categorically prevents sourcing (loading) if the shell is not interactive, using the following line:  
+**make sure that you account for initialization files that prevent (re)sourcing from a _non-interactive_ shell**.  
+For instance, **Debian** and **Ubuntu** come with a default `~/.bashrc` file that - needlessly - categorically prevents sourcing (loading) if the shell is not interactive, using the following line at the start of the script:  
 `[ -z "$PS1" ] && return`  
 To bypass that:
 
-* Either: Use `eval "$(grep -vFx '[ -z "$PS1" ] && return' ~/.bashrc)"` instead of `. ~/.bashrc`
-    * This filters out the interactivity check before effectively sourcing the file with `eval` (this is no less secure than using `.`). Note, 
-      however, that this tests only for the specific line found in default `~/.bashrc` files on Debian/Ubuntu and won't detect variations.
-      That said, I'm not aware of other platforms that come with an equivalent line, and there's generally no need to use such a check (except
-      perhaps to _selectively_ guard statements that contain terminal commands only).
-* Or: Invoke your script with `bash --norc --noprofile -i <script>`, which processes it with an interactive (`-i`) shell.
+* In `bash`, precede the reload (sourcing) command with `set -i` to simulate an interactive environment:
+
+          set -i       # turn on interactive mode
+          . ~/.bashrc  # reload (source) the initialization file
+          set +i       # turn interactive mode back off
+
+* Alternatively, invoke your script as a whole with `bash --norc --noprofile -i <script>`, which processes it in interactive (`-i`) mode.
+  * This would work analogously for `ksh` and `zsh` as well.
 
 
 ## Manual installation
@@ -135,7 +137,7 @@ To bypass that:
 * Make it executable with `chmod +x`.
 * Move or symlink it to a directory in your `$PATH`.
 * Invoke `n-install` as detailed below.
-* Open a new terminal tab/window or reload your shell initialization file before using `n` and any installed Node.js / io.js versions - see GitHub instructions above.
+* Open a new terminal tab/window or reload your shell initialization file before using `n` and any installed Node.js versions - see GitHub instructions above.
 
 ## Installation options
 
@@ -154,13 +156,12 @@ DESCRIPTION
   Additionally, installs n-update for updating n,
   and n-uninstall for uninstallation.
 
-  On successful installation of n, the specified Node.js/io.js <version>(s)
+  On successful installation of n, the specified Node.js <version>(s)
   are installed; by default, this is the latest stable Node.js version;
   To opt out, specify '-' as the only version argument.
   'stable' installs the latest stable version; 'latest' the latest
   available overall; otherwise, specify an explicit version numer, such as
   '0.12' or '0.10.35'.
-  To install io.js versions, prefix the version with 'io:'; e.g., 'io:stable'.
   If multiple versions are specified, the first one will be made active.
 
   The default installation directory is:
@@ -178,7 +179,7 @@ DESCRIPTION
      is in the $PATH.
   For any other shell you'll have to make these modifications yourself.
   Note that you either have to open a new terminal tab/window or re-source
-  the relevant initialization file before you can use n and Node.js/io.js.
+  the relevant initialization file before you can use n and Node.js.
 
   Options:
 
@@ -226,7 +227,7 @@ If, for some reason, `n-update` doesn't work or isn't available, run the followi
 
 # Uninstalling n
 
-Run `n-uninstall` to uninstall `n` as well as the Node.js / io.js versions that were installed with it.  
+Run `n-uninstall` to uninstall `n` as well as the Node.js versions that were installed with it.  
 `n-uninstall -y` skips the confirmation prompt - **use with caution**.
 
 ## Manual uninstallation
@@ -270,6 +271,10 @@ This project gratefully depends on the following open-source components, accordi
 Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
+
+* **[v0.1.7](https://github.com/mklement0/n-install/compare/v0.1.6...v0.1.7)** (2015-11-23):
+  * [doc] Removed references to io.js, now the project has merged with Node.js.
+  * [doc] Added better tip for simulating an interactive environment for reloading a Bash initialization file.
 
 * **[v0.1.6](https://github.com/mklement0/n-install/compare/v0.1.5...v0.1.6)** (2015-10-08):
   * [doc] CLI usage-help corrections.

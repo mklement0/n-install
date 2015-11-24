@@ -254,7 +254,7 @@ modifyShellInitFile() {
         warn - <<EOF
 Automatic modification of the initialization file for shell
 $SHELL is not supported.
-For n and the Node.js/io.js versions managed by it to work correctly,
+For n and the Node.js versions managed by it to work correctly,
 you must MANUALLY ADD THE EQUIVALENT OF THE FOLLOWING TO YOUR SHELL'S
 INITIALIZATION FILE:
 
@@ -384,7 +384,7 @@ unset CDPATH  # to prevent unpredictable `cd` behavior
 [[ -t 1 ]] || kNO_COLOR=1 # turn off colored output if stdout is not connected to a terminal
 
 # Output version number and exit, if requested. Note that the `ver='...'` statement is automatically updated by `make version VER=<newVer>` - DO keep the 'v' suffix in the variable _definition_.
-[[ $1 == '--version' ]] && { ver='v0.1.6'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://git.io/n-install-repo'; exit 0; }
+[[ $1 == '--version' ]] && { ver='v0.1.7'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://git.io/n-install-repo'; exit 0; }
 
 # !! AS OF n 1.3.0, n ITSELF ONLY WORKS WITH curl, NOT ALSO WITH wget.
 # !! Once n also supports wget, mention wget as an alternative in the help text.
@@ -400,13 +400,12 @@ DESCRIPTION
   Additionally, installs $kUPDATE_SCRIPT for updating n,
   and $kUNINSTALL_SCRIPT for uninstallation.
 
-  On successful installation of n, the specified Node.js/io.js <version>(s)
+  On successful installation of n, the specified Node.js <version>(s)
   are installed; by default, this is the latest stable Node.js version;
   To opt out, specify '-' as the only version argument.
   'stable' installs the latest stable version; 'latest' the latest
   available overall; otherwise, specify an explicit version numer, such as
   '0.12' or '0.10.35'.
-  To install io.js versions, prefix the version with 'io:'; e.g., 'io:stable'.
   If multiple versions are specified, the first one will be made active.
 
   The default installation directory is:
@@ -424,7 +423,7 @@ DESCRIPTION
      is in the \$PATH.
   For any other shell you'll have to make these modifications yourself.
   Note that you either have to open a new terminal tab/window or re-source
-  the relevant initialization file before you can use n and Node.js/io.js.
+  the relevant initialization file before you can use n and Node.js.
 
   Options:
 
@@ -503,11 +502,11 @@ while getopts ':ytN' opt; do
 done
 shift $((OPTIND - 1))
 
-# Determine what Node.js/io.js versions to install later.
+# Determine what Node.js versions to install later.
 if (( $# == 0 )); then # no operands
   # Install the latest stable Node.js version by default.
   versionsToInstall=( 'stable' )
-else # operands specified: interpret them as Node.js/io.js versions to install
+else # operands specified: interpret them as Node.js versions to install
   # *Syntactically* validate version numbers specified, if any: i.e.,
   # make sure they're either 'stable', 'latest', or either <major>.<minor>.<patch>
   # or <major>.<minor>. A '-' suppresses the default version ('stable') to install.
@@ -526,7 +525,7 @@ else # operands specified: interpret them as Node.js/io.js versions to install
       *) # must be a version number in the form <major>.<minor>[.<patch>]
         componentCount=$(parseSemVer -2 "${ver#io:}" | wc -l)
         (( componentCount == 2 || componentCount == 3 )) ||
-          dieSyntax - <<<"'$ver' is not a valid Node.js/io.js version specifier."$'\n'"(Must be 'stable', 'latest', or <major>.<minor>[.<patch>], optionally prefixed with 'io:'.)"
+          dieSyntax - <<<"'$ver' is not a valid Node.js version specifier."$'\n'"(Must be 'stable', 'latest', or <major>.<minor>[.<patch>].)" # , optionally prefixed with 'io:'
         versionsToInstall+=( "$ver" )
         ;;
     esac
@@ -534,7 +533,7 @@ else # operands specified: interpret them as Node.js/io.js versions to install
 fi
 
 # !! We prevent installation if the `n` or `npm` or `node` or `iojs` binaries are in the path, implying 
-# !! that either n or Node.js/io.js are already installed - whether they were installed with
+# !! that either n or Node.js are already installed - whether they were installed with
 # !! this utility or not.
 existingExes=()
 for exe in n node iosj npm; do
@@ -544,12 +543,12 @@ done
 if (( ${#existingExes[@]} > 0 )); then
 
   die - 3 <<EOF
-Aborting, because n and/or Node.js/io.js-related binaries are already
+Aborting, because n and/or Node.js-related binaries are already
 in the \$PATH:
          
 $(printf '       %s\n' "${existingExes[@]}")
 
-Please remove any existing n, Node.js or io.js installation, then try 
+Please remove any existing n, Node.js installation, then try 
 again.
 $([[ -n $(command -v n) ]] && printf %s "If you previously installed n via $kTHIS_REPO_URL,"$'\n'"run \`$kUNINSTALL_SCRIPT\` to uninstall.")
 EOF
@@ -603,16 +602,15 @@ if (( ! skipPrompts )); then
 
   cat <<EOF
 ===
-You are ABOUT TO INSTALL n, the Node.js/io.js VERSION MANAGER, in:
+You are ABOUT TO INSTALL n, the Node.js VERSION MANAGER, in:
 
   $(green $N_PREFIX)
 $( (( ${#versionsToInstall[@]} > 0 )) && cat <<EOF2 # !! the last line before 'EOF2' contains a single space to ensure that it isn't trimmed by the command subst.
 
-Afterward, THE FOLLOWING Node.js/io.js VERSION(S) WILL BE INSTALLED,
+Afterward, THE FOLLOWING Node.js VERSION(S) WILL BE INSTALLED,
 and the first one listed will be made active; 'stable' refers to the
-latest stable Node.js version, 'latest' to the latest available; io.js
-versions are prefixed with 'io:'; '-' means that no versions will be
-installed:
+latest stable Node.js version, 'latest' to the latest available;
+'-' means that no versions will be installed:
 
   $(green "${versionsToInstall[*]}")
  
@@ -713,18 +711,18 @@ EOF
 fi
 
 # At this point we consider installation of n itself successful, even if
-# installation of Node.js/io.js versions below fails or is aborted.
+# installation of Node.js versions below fails or is aborted.
 # Therefore, we now deactivate the cleanup handler.
 trap - "${sigs[@]}"
 
-# Install the requested Node.js/io.js versions, if any.
+# Install the requested Node.js versions, if any.
 
 toInstallCount=${#versionsToInstall[@]}
 installedCount=0
 
 if (( toInstallCount > 0 )); then
 
-  echo "-- Installing the requested Node.js/io.js version(s)..."
+  echo "-- Installing the requested Node.js version(s)..."
 
   ver= args=() firstInstalledVerArgs=() i=0
   for ver in "${versionsToInstall[@]}"; do
@@ -753,7 +751,7 @@ fi
 cat <<EOF
 === n successfully installed.
 $( (( installedCount > 0 )) && 
-  echo "  The active Node.js/io.js version is: $("$nBinDir"/node --version)" ||
+  echo "  The active Node.js version is: $("$nBinDir"/node --version)" ||
   echo "  Run \`n stable\` to install the latest stable Node.js version."
 )
 
@@ -763,10 +761,10 @@ $( (( installedCount > 0 )) &&
 
 $( [[ -n $initFile ]] && cat <<EOF2 || cat <<EOF3
   IMPORTANT: OPEN A NEW TERMINAL TAB/WINDOW or run \`. ${initFile/#$HOME/~}\`
-             before using n and Nodejs/io.js.
+             before using n and Node.js.
 EOF2
   IMPORTANT: Modify your shell initialization file as described above
-             before using n and Node.js/io.js.
+             before using n and Node.js.
 EOF3
 )
 ===
