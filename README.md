@@ -194,7 +194,7 @@ DESCRIPTION
   For more information, see http://git.io/n-install-repo
 
 PREREQUISITES
-  bash 3.2 or higher ... to run this script and n itself.
+  bash ... to run this script and n itself.
   curl ... to download helper scripts from GitHub and run n itself.
   git ... to clone n's GitHub repository and update n later.
   GNU make ... to run n's installation procedure.
@@ -271,6 +271,9 @@ This project gratefully depends on the following open-source components, accordi
 Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
+
+* **[v0.1.9](https://github.com/mklement0/n-install/compare/v0.1.8...v0.1.9)** (2015-12-18):
+  * [fix] Runtime Bash version check fixed; verified to work on at least 3.1.x - unclear, how far back it'll work.
 
 * **[v0.1.8](https://github.com/mklement0/n-install/compare/v0.1.7...v0.1.8)** (2015-12-18):
   * [enhancement] Added runtime check to ensure that the Bash version running `n-install` is 3.2 or higher.
