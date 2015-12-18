@@ -4,6 +4,9 @@ Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
 
+* **[v0.1.8](https://github.com/mklement0/n-install/compare/v0.1.7...v0.1.8)** (2015-12-18):
+  * [enhancement] Added runtime check to ensure that the Bash version running `n-install` is 3.2 or higher.
+
 * **[v0.1.7](https://github.com/mklement0/n-install/compare/v0.1.6...v0.1.7)** (2015-11-23):
   * [doc] Removed references to io.js, now the project has merged with Node.js.
   * [doc] Added better tip for simulating an interactive environment for reloading a Bash initialization file.
