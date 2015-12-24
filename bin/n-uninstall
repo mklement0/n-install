@@ -15,10 +15,10 @@ kINIT_FILE_LINE_ID=" # Added by $kINSTALLER_NAME (see $kTHIS_REPO_URL)." # The s
 kTHIS_NAME=$(basename "$0")
 
 # Exit codes reported by cleanUpShellInitFile()
+kEC_UNEXPECTED_ERR=1
 kEC_UNSUPPORTED_SHELL=4
 kEC_INIT_FILE_NOT_FOUND=5
 kEC_LINE_NOT_FOUND=6
-
 # 
 # BEGIN: Helper functions
 #
@@ -189,6 +189,9 @@ cleanUpShellInitFile() {
   # output the resulting N_PREFIX value; note that, hypothetically, this
   # could break. We do use the same, Bash-compatible code in n-install
   # for all supported shells, however.
+  # !! Using eval means that a *commented out* line will yield the EMPTY STRING,
+  # !! which is a case that we'll handle later in the calling code.
+  # !! The idea is that it's not safe to use the value from commented-out code.
   (N_PREFIX=; eval "$existingLine" &>/dev/null; printf '%s\n' "$N_PREFIX")
 
   # Remove the line from the init file.
@@ -200,6 +203,12 @@ cleanUpShellInitFile() {
   return 0
 }
 
+# isExportedVar <varName>
+#  Indicates via exit code whether the specified variable is exported.
+isExportedVar() {
+  [[ $(declare -p "$1" 2>/dev/null) =~ ' -x ' ]]
+}
+
 # 
 # END: Helper functions
 #
@@ -208,7 +217,7 @@ unset CDPATH  # to prevent unpredictable `cd` behavior
 [[ -t 1 ]] || kNO_COLOR=1 # turn off colored output if stdout is not connected to a terminal
 
 # Output version number and exit, if requested. Note that the `ver='...'` statement is automatically updated by `make version VER=<newVer>` - DO keep the 'v' suffix in the variable _definition_.
-[ "$1" = '--version' ] && { ver='v0.1.9'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://git.io/n-install-repo'; exit 0; }
+[ "$1" = '--version' ] && { ver='v0.2.0'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://git.io/n-install-repo'; exit 0; }
 
 # Command-line help.
 if [ "$1" = '--help' ] || [ "$1" = '-h' ]; then
@@ -269,25 +278,72 @@ shift $((OPTIND - 1)) # Skip the already-processed arguments (options).
 
 # Examine the relevant shell initialization file and capture the N_PREFIX
 # value defined there.
+mustCleanupShellInitFile=0
 vN_PREFIX_FROM_INIT_FILE=$(cleanUpShellInitFile -t)
 ec=$?
-
-# pv ec vN_PREFIX_FROM_INIT_FILE
+(( ec == kEC_UNEXPECTED_ERR )) && die
+(( ec == 0 )) && mustCleanupShellInitFile=1
 
 # If an error (other than an unexpected one) occurred, see if we can find
 # ANY traces of our installation, and exit with a warning, if we can't.
 # If we either find N_PREFIX defined or directory $kPREFIX_DIR in existence,
 # we assume we're dealing with either an unsupported shell or a corrupted
 # installation, and fail below with specific recommendations.
-(( ec > 1 )) && [[ -z $N_PREFIX && ! -d $kPREFIX_DIR ]] && { echo "WARNING: It looks like n is either not installed or wasn't installed with $kINSTALLER_NAME; nothing to do." >&2; exit 0; }
+(( ec != 0 )) && [[ -z $N_PREFIX && ! -d $kPREFIX_DIR ]] && { echo "WARNING: It looks like n is either not installed or wasn't installed with $kINSTALLER_NAME; nothing to do." >&2; exit 0; }
 
-# Decide if we can  go ahead with the uninstallation.
+# Decide if we can go ahead with the uninstallation.
 case $ec in
-  0)
-    : # everything OK, proceed below
+  0) # The line containing n-install's definitions was found in the init file.
+
+    if [[ -z $vN_PREFIX_FROM_INIT_FILE ]]; then # the value of variable N_PREFIX couldn't be derived from the line - typically, because it was commented out.
+
+      # As a courtesy, we look for a currently exported N_PREFIX variable.
+      if isExportedVar N_PREFIX && [[ -n $N_PREFIX ]]; then
+
+         warn - <<EOF
+While the initialization file for your shell ($SHELL) does contain the 
+expected modifications made by $kINSTALLER_NAME and they will be removed,
+it looks like they're commented out.
+
+Deriving the installation location from environment variable N_PREFIX.
+EOF
+         vN_PREFIX_FROM_INIT_FILE=$N_PREFIX
+
+      else # abort, because we can't be sure where n is installed.
+
+        warn - <<EOF
+MANUAL UNINSTALLATION NEEDED
+
+While the initialization file for your shell ($SHELL) does contain the 
+expected modifications made by $kINSTALLER_NAME and they will be removed, it
+looks like they're commented out.
+
+Since environment variable N_PREFIX isn't defined, the installation location
+cannot be safely determined.
+
+Try looking in the default install location, $kPREFIX_DIR
+EOF
+        exit 1
+      fi
+
+    fi
+    # everything OK, proceed below
     ;;
+
   $kEC_UNSUPPORTED_SHELL)
-    warn - <<EOF
+
+    # We look for a currently exported N_PREFIX variable.
+    if isExportedVar N_PREFIX && [[ -n $N_PREFIX ]]; then
+
+       warn - <<EOF
+Deriving the installation location from environment variable N_PREFIX,
+because the initialization file for your shell ($SHELL) was not 
+supported for automatic modification by $kINSTALLER_NAME.
+EOF
+
+    else # N_PREFIX is not defined - we give up.
+
+      warn - <<EOF
 MANUAL UNINSTALLATION NEEDED
 
 Because the initialization file for your shell ($SHELL) was not 
@@ -305,9 +361,12 @@ MANUALLY, to be safe:
     - If \$N_PREFIX is not defined, look in the default installation location,
       $kPREFIX_DIR
 EOF
-    exit $ec
+      exit $ec
+    fi
     ;;
+
   $kEC_INIT_FILE_NOT_FOUND)
+
     warn - <<EOF
 MANUAL UNINSTALLATION NEEDED
 
@@ -332,12 +391,30 @@ You must uninstall MANUALLY:
 EOF
     exit $ec
     ;;
+
   $kEC_LINE_NOT_FOUND)
-    warn - <<EOF
+    
+    # As a courtesy, we look for a currently exported N_PREFIX variable to cover
+    # cases where people have "out-sourced" the definition to a different file
+    # that is then sourced from the init file.
+    if isExportedVar N_PREFIX && [[ -n $N_PREFIX ]]; then
+
+
+      warn - <<EOF
+The initialization file for your shell ($SHELL) does not contain the expected
+modifications made by $kINSTALLER_NAME.
+
+Deriving the installation location from environment variable N_PREFIX.
+EOF
+       vN_PREFIX_FROM_INIT_FILE=$N_PREFIX
+
+    else # abort, because we have neither an init-file line nor exported var. N_PREFIX
+
+      warn - <<EOF
 MANUAL UNINSTALLATION NEEDED
 
 The initialization file for your shell ($SHELL) does not contain the expected
-modifications made by $kINSTALLER_NAME. 
+modifications made by $kINSTALLER_NAME, and variable N_PREFIX is not exported.
 
 You must uninstall MANUALLY.
 
@@ -346,18 +423,11 @@ You must uninstall MANUALLY.
    remove the N_PREFIX environment-variable definition and associated PATH
    modification.
 
- - Remove the directory that N_PREFIX points to, which is:
-
-     $N_PREFIX
-
-   Note: 
-    - Be sure that that directory contains no unrelated content you may
-      want to preserve.
-    - If \$N_PREFIX is not defined, look in the default installation location,
-      $kPREFIX_DIR
+ - See if n was installed in the default location, $kPREFIX_DIR
 
 EOF
-    exit $ec
+      exit $ec
+    fi
     ;;
   *) # unexpected error
     die
@@ -384,8 +454,9 @@ EOF
   done
 fi
 
-# Clean up the shell initialization file.
-cleanUpShellInitFile >/dev/null || die
+
+# Clean up the shell initialization file, if needed.
+(( mustCleanupShellInitFile )) && { cleanUpShellInitFile >/dev/null || die; }
 
 # Remove the directory.
 if [[ -d $vN_PREFIX_FROM_INIT_FILE ]]; then

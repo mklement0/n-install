@@ -61,13 +61,14 @@ for initFile in "${initFiles[@]}"; do
 
   # Run the uninstaller.
   case $i in
-    1) # simulated interactive uninstall - confirmed
+    1) # simulated *interactive* uninstall - confirmed
       stdErrOutput=$(runUninstall <<<'y' 2>&1 >/dev/null)
       ;;
-    2) # simulated interactive uninstall - declined
+    2) # simulated *interactive* uninstall - declined
       stdErrOutput=$(runUninstall <<<'n' 2>&1 >/dev/null)
       ;;
-    *) # unattended
+    *) # *unattended*
+      export -n N_PREFIX # !! The uninstaller will fall back on an exported N_PREFIX value, if the value can't be found in the init file; thus, we remove the env. variable here.
       stdErrOutput=$(runUninstall -y 2>&1 >/dev/null)
       ;;
   esac

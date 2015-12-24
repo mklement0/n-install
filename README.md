@@ -45,6 +45,7 @@ This is by far **the simplest way to get started with both `n` and Node.js** - e
     * Environment variable `N_PREFIX` is defined to point to the installation directory.
     * Directory `$N_PREFIX/bin` is appended to the `$PATH`, unless already present.
     * For other shells, these modification must be performed manually; instructions are provided during installation.
+    * You can also explicitly suppress modification with the `-n` option.
 * By default, the latest stable Node.js version is installed; you can suppress that or even specify multiple Node.js versions to install.
 * Note that any preexisting `n`, Node.js installation must be removed before using this installation method.
 * All installation prerequisites are met by default on OSX and some Linux distros; notably, `git` and `curl` must be present - see [Installing n](#installing-n) for details.
@@ -147,7 +148,7 @@ To bypass that:
 $ n-install --help
 
 SYNOPSIS
-  n-install [-t] [-y] [<version>...]
+  n-install [-t] [-y] [-n] [<version>...]
 
 DESCRIPTION
   Directly installs n, the Node.js version manager, which bypasses the need to
@@ -177,9 +178,10 @@ DESCRIPTION
    - export environment variable $N_PREFIX to point to the installation dir.
    - ensure that the directory containing the n executable, $N_PREFIX/bin,
      is in the $PATH.
-  For any other shell you'll have to make these modifications yourself.
   Note that you either have to open a new terminal tab/window or re-source
   the relevant initialization file before you can use n and Node.js.
+  For any other shell you'll have to make these modifications yourself.
+  You can also explicitly opt out of the modification with -n.
 
   Options:
 
@@ -190,6 +192,13 @@ DESCRIPTION
   -y
     Assumes yes as the reply to all prompts; in other words: runs unattended
     by auto-confirming the confirmation prompt.
+
+  -n
+    Suppresses updating of the relevant shell initialization file.
+    For instance, this allows for custom setups where all exports are 
+    "out-sourced" to an external file that is then sourced from the 
+    shell-initialization file; however, note that you'll then have to edit 
+    the out-sourced file *manually* - instructions will be printed.
 
   For more information, see http://git.io/n-install-repo
 
@@ -271,6 +280,11 @@ This project gratefully depends on the following open-source components, accordi
 Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
+
+* **[v0.2.0](https://github.com/mklement0/n-install/compare/v0.1.9...v0.2.0)** (2015-12-24):
+  * [enhancement] New option `-n` allows suppressing modification of shell-initialization files, to allow for setups where
+    all exports are "out-sourced" to an external file that is then sourced from the shell-initialization file; note that use of `-n`
+    therefore requires performing the modifications _manually_. 
 
 * **[v0.1.9](https://github.com/mklement0/n-install/compare/v0.1.8...v0.1.9)** (2015-12-18):
   * [fix] Runtime Bash version check fixed; verified to work on at least 3.1.x - unclear, how far back it'll work.

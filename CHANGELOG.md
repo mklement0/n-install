@@ -4,6 +4,11 @@ Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
 
+* **[v0.2.0](https://github.com/mklement0/n-install/compare/v0.1.9...v0.2.0)** (2015-12-24):
+  * [enhancement] New option `-n` allows suppressing modification of shell-initialization files, to allow for setups where
+    all exports are "out-sourced" to an external file that is then sourced from the shell-initialization file; note that use of `-n`
+    therefore requires performing the modifications _manually_. 
+
 * **[v0.1.9](https://github.com/mklement0/n-install/compare/v0.1.8...v0.1.9)** (2015-12-18):
   * [fix] Runtime Bash version check fixed; verified to work on at least 3.1.x - unclear, how far back it'll work.
 

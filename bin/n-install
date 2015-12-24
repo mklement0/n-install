@@ -241,6 +241,18 @@ clearDir() ( # execute in subshell to localize effect of shopt
   rm -rf "${itms[@]}"
 )
 
+# Print the line that a shell initialization file must contain for `n` (and 
+# `n-update` and `n-uninstall`) to work correctly.
+getShellInitFileLine() {
+  # Synthesize the - single - line to add to the init file, using Bash/Ksh/Zsh syntax.
+  # Definition of the N_PREFIX environment variable plus ensuring that
+  # $N_PREFIX/bin is in the $PATH, followed by the identifying comment.
+  printf '%s; %s %s' \
+    "export N_PREFIX=\"${N_PREFIX/#$HOME/\$HOME}\"" \
+    "[[ :\$PATH: == *\":\$N_PREFIX/bin:\"* ]] || PATH+=\":\$N_PREFIX/bin\"" \
+    "$kINIT_FILE_LINE_ID"
+}
+
 # SYNOPSIS
 #   modifyShellInitFile
 # DESCRIPTION
@@ -253,13 +265,8 @@ modifyShellInitFile() {
 
   local line initFile existingLine initFileContents
 
-  # Synthesize the - single - line to add to the init file, using Bash/Ksh/Zsh syntax.
-  # Definition of the N_PREFIX environment variable plus ensuring that
-  # $N_PREFIX/bin is in the $PATH, followed by the identifying comment.
-  printf -v line '%s; %s %s' \
-      "export N_PREFIX=\"${N_PREFIX/#$HOME/\$HOME}\"" \
-      "[[ :\$PATH: == *\":\$N_PREFIX/bin:\"* ]] || PATH+=\":\$N_PREFIX/bin\"" \
-      "$kINIT_FILE_LINE_ID"
+  # Get the line to add to the init file.
+  line=$(getShellInitFileLine)
 
   # Determine the shell-specific initialization file.
   if [[ -n $INSTALL_N_TEST_OVERRIDE_SHELL_INIT_FILE ]]; then # override for testing
@@ -410,14 +417,14 @@ unset CDPATH  # to prevent unpredictable `cd` behavior
 [[ -t 1 ]] || kNO_COLOR=1 # turn off colored output if stdout is not connected to a terminal
 
 # Output version number and exit, if requested. Note that the `ver='...'` statement is automatically updated by `make version VER=<newVer>` - DO keep the 'v' suffix in the variable _definition_.
-[[ $1 == '--version' ]] && { ver='v0.1.9'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://git.io/n-install-repo'; exit 0; }
+[[ $1 == '--version' ]] && { ver='v0.2.0'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://git.io/n-install-repo'; exit 0; }
 
 # !! AS OF n 1.3.0, n ITSELF ONLY WORKS WITH curl, NOT ALSO WITH wget.
 # !! Once n also supports wget, mention wget as an alternative in the help text.
 if [[ $1 == '--help' || $1 == '-h' ]]; then
   cat <<EOF
 SYNOPSIS
-  $kTHIS_NAME [-t] [-y] [<version>...]
+  $kTHIS_NAME [-t] [-y] [-n] [<version>...]
 
 DESCRIPTION
   Directly installs n, the Node.js version manager, which bypasses the need to
@@ -447,9 +454,10 @@ DESCRIPTION
    - export environment variable \$N_PREFIX to point to the installation dir.
    - ensure that the directory containing the n executable, \$N_PREFIX/bin,
      is in the \$PATH.
-  For any other shell you'll have to make these modifications yourself.
   Note that you either have to open a new terminal tab/window or re-source
   the relevant initialization file before you can use n and Node.js.
+  For any other shell you'll have to make these modifications yourself.
+  You can also explicitly opt out of the modification with -n.
 
   Options:
 
@@ -460,6 +468,13 @@ DESCRIPTION
   -y
     Assumes yes as the reply to all prompts; in other words: runs unattended
     by auto-confirming the confirmation prompt.
+
+  -n
+    Suppresses updating of the relevant shell initialization file.
+    For instance, this allows for custom setups where all exports are 
+    "out-sourced" to an external file that is then sourced from the 
+    shell-initialization file; however, note that you'll then have to edit 
+    the out-sourced file *manually* - instructions will be printed.
 
   For more information, see $kTHIS_REPO_URL
 
@@ -510,8 +525,8 @@ done
 [[ -z $preReqMsg ]] || die - <<<"$preReqMsg"
 
 # Parse options.
-skipPrompts=0 testPrerequisitesOnly=0 skipNodeInstall=0
-while getopts ':ytN' opt; do
+skipPrompts=0 testPrerequisitesOnly=0 skipInitFileUpdate=0
+while getopts ':ytn' opt; do
   [[ $opt == '?' ]] && dieSyntax "Unknown option: -$OPTARG"
   [[ $opt == ':' ]] && dieSyntax "Option -$OPTARG is missing its argument."  
   case "$opt" in
@@ -520,6 +535,9 @@ while getopts ':ytN' opt; do
       ;;
     y)
       skipPrompts=1
+      ;;
+    n)
+      skipInitFileUpdate=1
       ;;
     *)
       die "DESIGN ERROR: option -$opt not handled."
@@ -541,7 +559,7 @@ else # operands specified: interpret them as Node.js versions to install
   for ver; do
     case $ver in
       -)
-        : # means: do not install the default ('stable'); typically, 
+        : # means: do NOT install the default ('stable'); typically, 
           # we expect that to be the only operand, since an explicit list
           # of operands always overrides the default, but we don't enforce this.
         ;;
@@ -684,8 +702,22 @@ echo "-- Running local n installation to '$nBinDir'..."
 (cd "$nRepoDir" && PREFIX="$N_PREFIX" "$makeExe" install >/dev/null) || die "Aborting, because n's own installation procedure failed."
 
 # Modify the relevant shell initialization file.
-initFile=$(modifyShellInitFile) || die
-echo "-- Shell initialization file '$initFile' updated."
+if (( $skipInitFileUpdate )); then
+
+  initFile=
+  cat <<EOF
+-- NOTE: Skipping update of your shell initialization file, as requested.
+   Add the following line (or your shell's equivalent) to your initialization
+   file:
+     $(getShellInitFileLine)
+EOF
+
+else 
+
+  initFile=$(modifyShellInitFile) || die
+  echo "-- Shell initialization file '$initFile' updated."
+
+fi
 
 # Download/copy the helper scripts.
 #   Note that we do not abort on failing to download/copy them, because they
