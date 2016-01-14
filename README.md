@@ -73,10 +73,10 @@ curl -L http://git.io/n-install | bash
 curl -L http://git.io/n-install | bash -s -- -y
 ```
 
-* Automated installation to the default location, with subsequent installation of the latest stable Node.js version, as well as the latest 0.10.x release:
+* Automated installation to the default location, with subsequent installation of the latest stable Node.js version, the latest lts version, and the latest 0.10.x release:
 
 ```shell
-curl -L http://git.io/n-install | bash -s -- -y stable stable 0.10
+curl -L http://git.io/n-install | bash -s -- -y stable lts 0.10
 ```
 
 * Automated installation to custom location `~/util/n`, with subsequent installation of the latest stable Node.js version:
