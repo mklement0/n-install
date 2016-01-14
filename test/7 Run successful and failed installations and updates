@@ -66,9 +66,9 @@ for i in {1..6}; do
       runInstall -y - && ok=1
       nodeShouldInstall=0
       ;;
-    5) # unattended installation latest stable Node.js and latest io.js version.
-      descr='unattended: n + stable Node.js + latest io.js'
-      runInstall -y stable io:latest && ok=1
+    5) # unattended installation latest LTS Node.js and latest io.js version.
+      descr='unattended: n + LTS Node.js + latest io.js'
+      runInstall -y lts io:latest && ok=1
       nodeShouldInstall=1
       iojsShouldInstall=1
       ;;

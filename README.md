@@ -73,10 +73,11 @@ curl -L http://git.io/n-install | bash
 curl -L http://git.io/n-install | bash -s -- -y
 ```
 
-* Automated installation to the default location, with subsequent installation of the latest stable Node.js version, the latest lts version, and the latest 0.10.x release:
+* Automated installation to the default location, with subsequent installation of the latest LTS
+  (Long Term Support) version, and the latest 0.10.x release:
 
 ```shell
-curl -L http://git.io/n-install | bash -s -- -y stable lts 0.10
+curl -L http://git.io/n-install | bash -s -- -y lts 0.10
 ```
 
 * Automated installation to custom location `~/util/n`, with subsequent installation of the latest stable Node.js version:
@@ -254,7 +255,7 @@ If, for some reason, `n-uninstall` doesn't work, do the following:
 
 # License
 
-Copyright (c) 2015 Michael Klement <mklement0@gmail.com> (http://same2u.net), released under the [MIT license](https://spdx.org/licenses/MIT#licenseText).
+Copyright (c) 2015-2016 Michael Klement <mklement0@gmail.com> (http://same2u.net), released under the [MIT license](https://spdx.org/licenses/MIT#licenseText).
 
 ## Acknowledgements
 
@@ -280,6 +281,10 @@ This project gratefully depends on the following open-source components, accordi
 Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
+
+* **[v0.3.0](https://github.com/mklement0/n-install/compare/v0.2.0...v0.3.0)** (2016-01-14):
+  * [enhancement] Support for `n`'s symbolic `lts` version specifier that installs
+    the latest LTS (Long Term Support) version.
 
 * **[v0.2.0](https://github.com/mklement0/n-install/compare/v0.1.9...v0.2.0)** (2015-12-24):
   * [enhancement] New option `-n` allows suppressing modification of shell-initialization files, to allow for setups where
