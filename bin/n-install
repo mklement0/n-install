@@ -563,7 +563,7 @@ else # operands specified: interpret them as Node.js versions to install
           # we expect that to be the only operand, since an explicit list
           # of operands always overrides the default, but we don't enforce this.
         ;;
-      stable|latest|io:stable|io:latest) # symbolic names for latest stable / unstable versions
+      lts|stable|latest|io:stable|io:latest) # symbolic names for latest stable / unstable versions
         versionsToInstall+=( "$ver" )
         ;;
       *) # must be a version number in the form <major>.<minor>[.<patch>]
