@@ -4,6 +4,10 @@ Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
 
+* **[v0.3.1](https://github.com/mklement0/n-install/compare/v0.3.0...v0.3.1)** (2016-02-05):
+  * [optimization] `git clone` and `git pull` now use `--depth 1` to only get the latest
+    revision of `n`, which is all that is needed; tip of the hat to @steelbrain.
+
 * **[v0.3.0](https://github.com/mklement0/n-install/compare/v0.2.0...v0.3.0)** (2016-01-14):
   * [enhancement] Support for `n`'s symbolic `lts` version specifier that installs
     the latest LTS (Long Term Support) version.
