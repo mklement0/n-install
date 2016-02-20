@@ -149,7 +149,7 @@ To bypass that:
 $ n-install --help
 
 SYNOPSIS
-  n-install [-t] [-y] [-n] [<version>...]
+  n-install [-t] [-y|-q] [-n] [<version>...]
 
 DESCRIPTION
   Directly installs n, the Node.js version manager, which bypasses the need to
@@ -193,6 +193,11 @@ DESCRIPTION
   -y
     Assumes yes as the reply to all prompts; in other words: runs unattended
     by auto-confirming the confirmation prompt.
+ 
+  -q
+    Like -y, except that, additionally, all status messages are suppressed,
+    including the information and progress bar normally displayed by n while
+    installing Node.js versions.
 
   -n
     Suppresses updating of the relevant shell initialization file.
@@ -281,6 +286,9 @@ This project gratefully depends on the following open-source components, accordi
 Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
+
+* **[v0.3.2](https://github.com/mklement0/n-install/compare/v0.3.1...v0.3.2)** (2016-02-20):
+  * [enhancement] New option `-q` (quiet mode) skips prompts, like `-y`, and additionally suppresses all status output.
 
 * **[v0.3.1](https://github.com/mklement0/n-install/compare/v0.3.0...v0.3.1)** (2016-02-05):
   * [optimization] `git clone` and `git pull` now use `--depth 1` to only get the latest

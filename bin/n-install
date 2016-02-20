@@ -417,14 +417,14 @@ unset CDPATH  # to prevent unpredictable `cd` behavior
 [[ -t 1 ]] || kNO_COLOR=1 # turn off colored output if stdout is not connected to a terminal
 
 # Output version number and exit, if requested. Note that the `ver='...'` statement is automatically updated by `make version VER=<newVer>` - DO keep the 'v' suffix in the variable _definition_.
-[[ $1 == '--version' ]] && { ver='v0.3.1'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://git.io/n-install-repo'; exit 0; }
+[[ $1 == '--version' ]] && { ver='v0.3.2'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://git.io/n-install-repo'; exit 0; }
 
 # !! AS OF n 1.3.0, n ITSELF ONLY WORKS WITH curl, NOT ALSO WITH wget.
 # !! Once n also supports wget, mention wget as an alternative in the help text.
 if [[ $1 == '--help' || $1 == '-h' ]]; then
   cat <<EOF
 SYNOPSIS
-  $kTHIS_NAME [-t] [-y] [-n] [<version>...]
+  $kTHIS_NAME [-t] [-y|-q] [-n] [<version>...]
 
 DESCRIPTION
   Directly installs n, the Node.js version manager, which bypasses the need to
@@ -468,6 +468,11 @@ DESCRIPTION
   -y
     Assumes yes as the reply to all prompts; in other words: runs unattended
     by auto-confirming the confirmation prompt.
+ 
+  -q
+    Like -y, except that, additionally, all status messages are suppressed,
+    including the information and progress bar normally displayed by n while
+    installing Node.js versions.
 
   -n
     Suppresses updating of the relevant shell initialization file.
@@ -525,8 +530,8 @@ done
 [[ -z $preReqMsg ]] || die - <<<"$preReqMsg"
 
 # Parse options.
-skipPrompts=0 testPrerequisitesOnly=0 skipInitFileUpdate=0
-while getopts ':ytn' opt; do
+skipPrompts=0 testPrerequisitesOnly=0 skipInitFileUpdate=0 quiet=0
+while getopts ':ytnq' opt; do
   [[ $opt == '?' ]] && dieSyntax "Unknown option: -$OPTARG"
   [[ $opt == ':' ]] && dieSyntax "Option -$OPTARG is missing its argument."  
   case "$opt" in
@@ -538,6 +543,9 @@ while getopts ':ytn' opt; do
       ;;
     n)
       skipInitFileUpdate=1
+      ;;
+    q)
+      quiet=1
       ;;
     *)
       die "DESIGN ERROR: option -$opt not handled."
@@ -621,7 +629,7 @@ nDir=${N_PREFIX}/${kN_DIRNAME}
 mkdir -p "$nDir" || die "Failed to create directory '$nDir'."
 
 # Set up a trap to automatically clean up the dir(s) in case the installation
-# doesn't finish - however the script terminates / is terminated.
+# doesn't finish - irrespective of how the script terminates / is terminated.
 sigs=( EXIT HUP INT QUIT TERM )
 # A note re exit code: with the exception of the EXIT pseudo-signal in the event
 # of *self-initiated* termination, we do not have access to the signal number, 
@@ -637,12 +645,12 @@ trap 'ec=${ecOverride:-$?}; [[ $ec -eq 0 && -z $ecOverride ]] && ec=1; (( didExi
 
 # If only prerequisite testing was requested, report success and exit here.
 if (( testPrerequisitesOnly )); then
-    echo "Prerequisites for installing to '$N_PREFIX' are met."
+    (( quiet )) || echo "Prerequisites for installing to '$N_PREFIX' are met."
     ecOverride=0
     exit
 fi
 
-if (( ! skipPrompts )); then
+if (( ! (skipPrompts || quiet) )); then
 
   cat <<EOF
 ===
@@ -695,17 +703,17 @@ nRepoDir=${nDir}/.repo
 nBinDir=${N_PREFIX}/bin
 
 # Clone n's repository into "${N_PREFIX}/n/.repo"
-echo "-- Cloning $kN_REPO_URL to '$nRepoDir'..."
+(( quiet )) || echo "-- Cloning $kN_REPO_URL to '$nRepoDir'..."
 git clone --depth 1 -q "$kN_REPO_URL" "$nRepoDir/" >/dev/null || die "Aborting, because cloning n's GitHub repository into '$nRepoDir' failed."
 
-echo "-- Running local n installation to '$nBinDir'..."
+(( quiet )) || echo "-- Running local n installation to '$nBinDir'..."
 (cd "$nRepoDir" && PREFIX="$N_PREFIX" "$makeExe" install >/dev/null) || die "Aborting, because n's own installation procedure failed."
 
 # Modify the relevant shell initialization file.
 if (( $skipInitFileUpdate )); then
 
   initFile=
-  cat <<EOF
+  (( quiet )) || cat <<EOF
 -- NOTE: Skipping update of your shell initialization file, as requested.
    Add the following line (or your shell's equivalent) to your initialization
    file:
@@ -715,14 +723,14 @@ EOF
 else 
 
   initFile=$(modifyShellInitFile) || die
-  echo "-- Shell initialization file '$initFile' updated."
+  (( quiet )) || echo "-- Shell initialization file '$initFile' updated."
 
 fi
 
 # Download/copy the helper scripts.
 #   Note that we do not abort on failing to download/copy them, because they
 #   are not essential for operation.
-echo "-- Installing helper scripts in '$nBinDir'..."
+(( quiet )) || echo "-- Installing helper scripts in '$nBinDir'..."
 
 helpersCopiedLocally=0
 if [[ -f ${BASH_SOURCE} ]]; then # running from a local script file
@@ -735,7 +743,7 @@ if [[ -f ${BASH_SOURCE} ]]; then # running from a local script file
 
   (cd "$(dirname "$(rreadlink "$BASH_SOURCE")")" &&
     cp "${kHELPER_SCRIPTS[@]}" "$nBinDir/" &&
-     echo "(Helper scripts copied from '$PWD'.)"
+     { (( quiet )) || echo "(Helper scripts copied from '$PWD'.)"; }
   ) 2>/dev/null && helpersCopiedLocally=1
 
 fi
@@ -780,12 +788,14 @@ installedCount=0
 
 if (( toInstallCount > 0 )); then
 
-  echo "-- Installing the requested Node.js version(s)..."
+  (( quiet )) || echo "-- Installing the requested Node.js version(s)..."
 
-  ver= args=() firstInstalledVerArgs=() i=0
+  firstInstalledVerArgs=() i=0
+  (( quiet )) && exec 3<&1 1> /dev/null  # suppress stdout from `n`
   for ver in "${versionsToInstall[@]}"; do
-    echo "   $(( ++i )) of ${toInstallCount}: ${ver}..."
-    [[ $ver == 'io:'* ]] && args=( io "${ver#io:}" ) || args=( "$ver" )
+    (( quiet )) || echo "   $(( ++i )) of ${toInstallCount}: ${ver}..."
+    (( quiet )) && args=( '-q' ) || args=()
+    [[ $ver == 'io:'* ]] && args+=( io "${ver#io:}" ) || args+=( "$ver" )
     # Note: To be safe, we place $nBinDir FIRST in the path for this invocation.
     if PATH="$nBinDir:$PATH" N_PREFIX="$N_PREFIX" n "${args[@]}"; then
       (( ++installedCount == 1 )) && firstInstalledVerArgs=( "${args[@]}" )
@@ -793,6 +803,7 @@ if (( toInstallCount > 0 )); then
       warn "Failed to install version '$ver'."
     fi
   done
+  (( quiet )) && exec 1>&3 3>&- # restore stdout
 
   # Activate the first successfully installed version (otherwise the last
   # version installed would be the active one).
@@ -806,7 +817,7 @@ fi
 # Report success and provide further instructions.
 # !! Do not use unbalanced single quotes - such as an apostrophe - in the embedded
 # !! here-docs below, as they inexplicably break the enclosing here-document in Bash 3.x.
-cat <<EOF
+(( quiet )) || cat <<EOF
 === n successfully installed.
 $( (( installedCount > 0 )) && 
   echo "  The active Node.js version is: $("$nBinDir"/node --version)" ||
