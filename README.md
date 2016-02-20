@@ -73,6 +73,13 @@ curl -L http://git.io/n-install | bash
 curl -L http://git.io/n-install | bash -s -- -y
 ```
 
+* Automated, _quiet_ installation to default location `$HOME/n` and installation of the latest stable Node.js version; _no status information_
+is displayed:
+
+```shell
+curl -sL http://git.io/n-install | bash -s -- -q
+```
+
 * Automated installation to the default location, with subsequent installation of the latest LTS
   (Long Term Support) version, and the latest 0.10.x release:
 
