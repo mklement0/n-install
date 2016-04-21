@@ -50,16 +50,18 @@ test:
 ifeq ($(NOTEST),1)
 	@echo Note: Skipping tests, as requested. >&2
 else
-	@if [[ -n $$(json -f package.json main) ]]; then tap ./test; else urchin ./test; fi
+	@exists() { [ -e "$$1" ]; }; exists ./test/* || { echo "(No tests defined.)" >&2; exit 0; }; \
+	 if [[ -n $$(json -f package.json main) ]]; then tap ./test; else urchin ./test; fi
 endif
 
-# Commits (with prompt for message) and pushes to the branch of the same name in remote repo 'origin', tags included.
+# Commits (with prompt for message) and pushes to the branch of the same name in remote repo 'origin', 
+# but *without* tags, so as to allow quick pushing of changes without running into problems with tag redefinitions.
+# (Tags are only pushed - forcefully - with `make release`.)
 .PHONY: push
 push: _need-clean-ws-or-no-untracked-files
 	@[[ -z $$(git status --porcelain || echo no) ]] && echo "-- (Nothing to commit.)" || { git commit || exit; echo "-- Committed."; }; \
 	 targetBranch=`git symbolic-ref --short HEAD` || exit; \
 	 git push origin "$$targetBranch" || exit; \
-	 git push origin "$$targetBranch" --tags || exit; \
 	 echo "-- Pushed."
 
 
@@ -340,4 +342,4 @@ _need-origin:
 .PHONY: _need-npm-credentials
 _need-npm-credentials:
 	@[[ `json -f package.json private` == 'true' ]] && exit 0; \
-	 grep -Eq '^//registry.npmjs.org/:_password' ~/.npmrc || { echo "ERROR: npm-registry credentials not found. Please log in with 'npm login' in order to enable publishing." >&2; exit 2; }; \
+	 grep -Eq '^//registry.npmjs.org/:(_password|_authToken)=' ~/.npmrc || { echo "ERROR: npm-registry credentials not found. Please log in with 'npm login' in order to enable publishing." >&2; exit 2; }; \
