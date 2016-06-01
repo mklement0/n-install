@@ -36,14 +36,16 @@ tmpInitFile="$tmpDir/initFile"
 
 # Define the shell-init test files to use.
 # NOTE: The *1*-based indices of the arrays must match the `case` handlers below.
+# 1-based indices:           1                                     2                               3                                       4                                        5                                         6
 initFiles=(     ./.fixtures/shellInitFile-ownEntry ./.fixtures/shellInitFile-ownEntry ./.fixtures/shellInitFile-ownEntry ./.fixtures/shellInitFile-multipleOwnEntries ./.fixtures/shellInitFile-noentry     ./.fixtures/shellInitFile-foreignEntry  )
 descriptions=(  'interactive - confirmed'          'interactive - declined'           'own entry'                        'multiple own entries'                       'no own entry'                        'foreign entry'                         )
 
 i=0
 for initFile in "${initFiles[@]}"; do
   
-  descr="${descriptions[i++]}"
-  
+  (( ++i )) # start wit index 1
+  descr="${descriptions[i-1]}"
+ 
   # Create a dummy file and subdirs to test if they get in the way of removing $tmpPrefixDir.
   mkdir -p "$tmpPrefixDir/dummyDir" || die
   touch "$tmpPrefixDir/dummyFile" || die
@@ -86,8 +88,8 @@ for initFile in "${initFiles[@]}"; do
       fgrep -q "$kINIT_FILE_LINE_ID" "$tmpInitFile" && die "$descr: Init file still contains '$kINIT_FILE_LINE_ID'. $epilogue"
       [[ ! -e "$tmpPrefixDir" ]] || die "$descr: Prefix dir still exists. $epilogue"
       ;;
-    5|6) # init files without expected entry: should not succeed, and should keep "$tmpPrefixDir"
-      (( ec > 1 )) || die "$descr: Unexpectedly reported exit code $ec. $epilogue"
+    5|6) # init files without expected entry: should keep "$tmpPrefixDir" and either report 6, if ~/n is present or 0 (just a warning), if it isn't.  
+      (( ec == 0  || ec == 6 )) || die "$descr: Unexpectedly reported exit code $ec. $epilogue"
        [[ -e "$tmpPrefixDir" ]] || die "$descr: Prefix dir unexpectedly removed. $epilogue"
       ;;
     *)

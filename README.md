@@ -30,7 +30,7 @@ Additionally, installs scripts `n-update` for later on-demand updating of `n`, a
 The simplest case is **installation of `n` with confirmation prompt**, with subsequent **installation of the latest stable Node.js version**:
 
 ```shell
-curl -L http://git.io/n-install | bash
+curl -L https://git.io/n-install | bash
 ```
 
 This is by far **the simplest way to get started with both `n` and Node.js** - even if you're looking to install only the latest stable Node.js version, with no (immediate) plans to install _multiple_ versions.
@@ -64,33 +64,33 @@ Note: The examples use only `curl` for brevity; to run a given command with `wge
 * Installation with confirmation prompt to default location `$HOME/n` and installation of the latest stable Node.js version:
 
 ```shell
-curl -L http://git.io/n-install | bash
+curl -L https://git.io/n-install | bash
 ```
 
 * Automated installation to default location `$HOME/n` and installation of the latest stable Node.js version:
 
 ```shell
-curl -L http://git.io/n-install | bash -s -- -y
+curl -L https://git.io/n-install | bash -s -- -y
 ```
 
 * Automated, _quiet_ installation to default location `$HOME/n` and installation of the latest stable Node.js version; _no status information_
 is displayed:
 
 ```shell
-curl -sL http://git.io/n-install | bash -s -- -q
+curl -sL https://git.io/n-install | bash -s -- -q
 ```
 
 * Automated installation to the default location, with subsequent installation of the latest LTS
   (Long Term Support) version, and the latest 0.10.x release:
 
 ```shell
-curl -L http://git.io/n-install | bash -s -- -y lts 0.10
+curl -L https://git.io/n-install | bash -s -- -y lts 0.10
 ```
 
 * Automated installation to custom location `~/util/n`, with subsequent installation of the latest stable Node.js version:
 
 ```shell
-curl -L http://git.io/n-install | N_PREFIX=~/util/n bash -s -- -y
+curl -L https://git.io/n-install | N_PREFIX=~/util/n bash -s -- -y
 ```
 
 # Installing n
@@ -114,7 +114,7 @@ For other shells, manual updating of the relevant initialization file is require
 ## Installation from GitHub
 
 ```shell
-curl -L http://git.io/n-install | [N_PREFIX=<dir>] bash [-s -- [-y] [<version>...]]
+curl -L https://git.io/n-install | [N_PREFIX=<dir>] bash [-s -- [-y] [<version>...]]
 ```
 
 See below for an explanation of the options; `-s --` is required by Bash itself in order to pass options through to the script piped from stdin.
@@ -142,7 +142,7 @@ To bypass that:
 
 ## Manual installation
 
-* Download [this `bash` script](http://git.io/n-install) as `n-install`.
+* Download [this `bash` script](https://git.io/n-install) as `n-install`.
 * Make it executable with `chmod +x`.
 * Move or symlink it to a directory in your `$PATH`.
 * Invoke `n-install` as detailed below.
@@ -213,7 +213,7 @@ DESCRIPTION
     shell-initialization file; however, note that you'll then have to edit 
     the out-sourced file *manually* - instructions will be printed.
 
-  For more information, see http://git.io/n-install-repo
+  For more information, see https://git.io/n-install-repo
 
 PREREQUISITES
   bash ... to run this script and n itself.
@@ -293,6 +293,9 @@ This project gratefully depends on the following open-source components, accordi
 Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
+
+* **[v0.3.3](https://github.com/mklement0/n-install/compare/v0.3.2...v0.3.3)** (2016-06-01):
+  * [security] Switched to https:// URLs.
 
 * **[v0.3.2](https://github.com/mklement0/n-install/compare/v0.3.1...v0.3.2)** (2016-02-20):
   * [enhancement] New option `-q` (quiet mode) skips prompts, like `-y`, and additionally suppresses all status output.

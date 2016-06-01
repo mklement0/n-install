@@ -4,6 +4,9 @@ Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
 
+* **[v0.3.3](https://github.com/mklement0/n-install/compare/v0.3.2...v0.3.3)** (2016-06-01):
+  * [security] Switched to https:// URLs.
+
 * **[v0.3.2](https://github.com/mklement0/n-install/compare/v0.3.1...v0.3.2)** (2016-02-20):
   * [enhancement] New option `-q` (quiet mode) skips prompts, like `-y`, and additionally suppresses all status output.
 
