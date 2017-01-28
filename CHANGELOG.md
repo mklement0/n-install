@@ -6,7 +6,14 @@ Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 * **[v0.3.4](https://github.com/mklement0/n-install/compare/v0.3.2...v0.3.3)** (2017-01-27):
   * [fix] for [#10](https://github.com/mklement0/n-install/issues/10): `n-update` could fail to update `n` due to how it updated the local
-    copy of the `n` repo.
+    copy of the `n` repo.  
+    To update an already-installed copy of `n-update`, run the following:
+    ```shell
+    cd "$N_PREFIX/bin"
+    curl https://raw.githubusercontent.com/mklement0/n-install/stable/bin/n-update > n-update
+    ```
+    and then run `n-update` again.
+
 
 * **[v0.3.3](https://github.com/mklement0/n-install/compare/v0.3.2...v0.3.3)** (2016-06-01):
   * [security] Switched to https:// URLs.
