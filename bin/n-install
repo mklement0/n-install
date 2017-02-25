@@ -419,7 +419,7 @@ unset CDPATH  # to prevent unpredictable `cd` behavior
 [[ -t 1 ]] || kNO_COLOR=1 # turn off colored output if stdout is not connected to a terminal
 
 # Output version number and exit, if requested. Note that the `ver='...'` statement is automatically updated by `make version VER=<newVer>` - DO keep the 'v' prefix in the variable _definition_.
-[[ $1 == '--version' ]] && { ver='v0.3.4'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://git.io/n-install-repo'; exit 0; }
+[[ $1 == '--version' ]] && { ver='v0.3.5'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://git.io/n-install-repo'; exit 0; }
 
 # !! AS OF n 1.3.0, n ITSELF ONLY WORKS WITH curl, NOT ALSO WITH wget.
 # !! Once n also supports wget, mention wget as an alternative in the help text.
@@ -436,11 +436,17 @@ DESCRIPTION
   and $kUNINSTALL_SCRIPT for uninstallation.
 
   On successful installation of n, the specified Node.js <version>(s)
-  are installed; by default, this is the latest stable Node.js version;
+  are installed; by default, this is the latest stable Node.js version.
+  
   To opt out, specify '-' as the only version argument.
-  'stable' installs the latest stable version; 'latest' the latest
-  available overall; otherwise, specify an explicit version numer, such as
-  '0.12' or '0.10.35'.
+
+  Supported version specifiers:
+
+  * stable ... installs the latest stable version
+  * latest ... the latest version available overall
+  * lts    ... the LTS (long-term stability) version
+  * otherwise, specify an explicit version numer, such as '0.12' or '0.10.35'
+  
   If multiple versions are specified, the first one will be made active.
 
   The default installation directory is:
@@ -501,9 +507,9 @@ EXAMPLES
     # stable Node.js version.
   $kTHIS_NAME -y -
     # Automated installation of n, followed by automated installation
-    # of the latest stable and unstable Node.js versions, as well
+    # of the LTS and the latest stable Node.js versions, as well
     # as the latest 0.8.x version.
-  $kTHIS_NAME -y stable latest 0.8
+  $kTHIS_NAME -y lts latest 0.8
 EOF
     exit 0
 fi

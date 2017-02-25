@@ -166,11 +166,17 @@ DESCRIPTION
   and n-uninstall for uninstallation.
 
   On successful installation of n, the specified Node.js <version>(s)
-  are installed; by default, this is the latest stable Node.js version;
+  are installed; by default, this is the latest stable Node.js version.
+  
   To opt out, specify '-' as the only version argument.
-  'stable' installs the latest stable version; 'latest' the latest
-  available overall; otherwise, specify an explicit version numer, such as
-  '0.12' or '0.10.35'.
+
+  Supported version specifiers:
+
+  * stable ... installs the latest stable version
+  * latest ... the latest version available overall
+  * lts    ... the LTS (long-term stability) version
+  * otherwise, specify an explicit version numer, such as '0.12' or '0.10.35'
+  
   If multiple versions are specified, the first one will be made active.
 
   The default installation directory is:
@@ -231,9 +237,9 @@ EXAMPLES
     # stable Node.js version.
   n-install -y -
     # Automated installation of n, followed by automated installation
-    # of the latest stable and unstable Node.js versions, as well
+    # of the LTS and the latest stable Node.js versions, as well
     # as the latest 0.8.x version.
-  n-install -y stable latest 0.8
+  n-install -y lts latest 0.8
 ```
 
 # Updating n
@@ -245,7 +251,7 @@ Run `n-update` on demand to update `n` itself to the latest version.
 
 If, for some reason, `n-update` doesn't work or isn't available, run the following to update `n`:
 
-* `cd "$N_PREFIX/n/.repo" && git pull && PREFIX="$N_PREFIX" make install && cd -`
+* `cd "$N_PREFIX/n/.repo" && git fetch --depth 1 --quiet && git reset --hard origin/master --quiet && PREFIX="$N_PREFIX" make install && cd -`
 
 # Uninstalling n
 
@@ -293,6 +299,9 @@ This project gratefully depends on the following open-source components, accordi
 Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
+
+* **[v0.3.5](https://github.com/mklement0/n-install/compare/v0.3.4...v0.3.5)** (2017-02-25):
+  * [doc] Fixed manual `n` update instructions, added LTS version hints to CLI help.
 
 * **[v0.3.4](https://github.com/mklement0/n-install/compare/v0.3.2...v0.3.3)** (2017-01-27):
   * [fix] for [#10](https://github.com/mklement0/n-install/issues/10): `n-update` could fail to update `n` due to how it updated the local
