@@ -124,7 +124,7 @@ unset CDPATH  # to prevent unpredictable `cd` behavior
 [[ -t 1 ]] || kNO_COLOR=1 # turn off colored output if stdout is not connected to a terminal
 
 # Output version number and exit, if requested. Note that the `ver='...'` statement is automatically updated by `make version VER=<newVer>` - DO keep the 'v' prefix in the variable _definition_.
-[ "$1" = '--version' ] && { ver='v0.3.5'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://git.io/n-install-repo'; exit 0; }
+[ "$1" = '--version' ] && { ver='v0.3.6'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://git.io/n-install-repo'; exit 0; }
 
 # Command-line help.
 if [ "$1" = '--help' ] || [ "$1" = '-h' ]; then
@@ -210,11 +210,14 @@ fi
 cd "$repo" || die
 
 echo "-- Checking for updates..."
-# Note: We only get the latest commit, because that is all we need to run.
-#       Since we're therefore lacking history, we cannot use *pull*,
-#       and instead must *fetch* and then force checking out what we fetched.
-#       See https://github.com/mklement0/n-install/issues/10
-git fetch --depth 1 --quiet && git reset --hard origin/master --quiet || die
+# Note: 
+#  * We only get the latest commit, because that is all we need to run.
+#    Since we're therefore lacking history, we cannot use *pull*,
+#    and instead must *fetch* and then force checking out what we fetched.
+#    See https://github.com/mklement0/n-install/issues/10
+#  * We use `git config core.autocrlf input` before `git reset ...` to be safe, to ensure that files
+#    updated are not checked out with CRLF newlines, should core.autocrlf (now, unexpectedly) be true globally.
+git fetch --depth 1 --quiet && git config core.autocrlf input && git reset --hard --quiet origin/master || die
 
 src="$repo/bin/n"
 target="$nExe"

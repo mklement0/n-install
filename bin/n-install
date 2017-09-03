@@ -419,7 +419,7 @@ unset CDPATH  # to prevent unpredictable `cd` behavior
 [[ -t 1 ]] || kNO_COLOR=1 # turn off colored output if stdout is not connected to a terminal
 
 # Output version number and exit, if requested. Note that the `ver='...'` statement is automatically updated by `make version VER=<newVer>` - DO keep the 'v' prefix in the variable _definition_.
-[[ $1 == '--version' ]] && { ver='v0.3.5'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://git.io/n-install-repo'; exit 0; }
+[[ $1 == '--version' ]] && { ver='v0.3.6'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://git.io/n-install-repo'; exit 0; }
 
 # !! AS OF n 1.3.0, n ITSELF ONLY WORKS WITH curl, NOT ALSO WITH wget.
 # !! Once n also supports wget, mention wget as an alternative in the help text.
@@ -585,7 +585,7 @@ else # operands specified: interpret them as Node.js versions to install
       *) # must be a version number in the form <major>.<minor>[.<patch>]
         componentCount=$(parseSemVer -2 "${ver#io:}" | wc -l)
         (( componentCount == 2 || componentCount == 3 )) ||
-          dieSyntax - <<<"'$ver' is not a valid Node.js version specifier."$'\n'"(Must be 'stable', 'latest', or <major>.<minor>[.<patch>].)" # , optionally prefixed with 'io:'
+          dieSyntax - <<<"'$ver' is not a valid Node.js version specifier."$'\n'"(Must be 'lts', 'stable', 'latest', or <major>.<minor>[.<patch>].)" # , optionally prefixed with 'io:'
         versionsToInstall+=( "$ver" )
         ;;
     esac
@@ -668,9 +668,11 @@ You are ABOUT TO INSTALL n, the Node.js VERSION MANAGER, in:
 $( (( ${#versionsToInstall[@]} > 0 )) && cat <<EOF2 # !! the last line before 'EOF2' contains a single space to ensure that it isn't trimmed by the command subst.
 
 Afterward, THE FOLLOWING Node.js VERSION(S) WILL BE INSTALLED,
-and the first one listed will be made active; 'stable' refers to the
-latest stable Node.js version, 'latest' to the latest available;
-'-' means that no versions will be installed:
+and the first one listed will be made active; 
+  'lts' refers to the LTS (long-term stability) version, 
+  'stable' refers to the latest stable version, and
+  'latest' to the latest available version.
+  '-' means that no versions will be installed:
 
   $(green "${versionsToInstall[*]}")
  
@@ -711,11 +713,14 @@ nRepoDir=${nDir}/.repo
 nBinDir=${N_PREFIX}/bin
 
 # Clone n's repository into "${N_PREFIX}/n/.repo"
+# To deal with possible CRLF issues (see below), suppress the normally automatich checkout (populating the working tree).
 (( quiet )) || echo "-- Cloning $kN_REPO_URL to '$nRepoDir'..."
-git clone --depth 1 -q "$kN_REPO_URL" "$nRepoDir/" >/dev/null || die "Aborting, because cloning n's GitHub repository into '$nRepoDir' failed."
+git clone --depth 1 --no-checkout --quiet "$kN_REPO_URL" "$nRepoDir/" >/dev/null || die "Aborting, because cloning n's GitHub repository into '$nRepoDir' failed."
 
 (( quiet )) || echo "-- Running local n installation to '$nBinDir'..."
-(cd "$nRepoDir" && PREFIX="$N_PREFIX" "$makeExe" install >/dev/null) || die "Aborting, because n's own installation procedure failed."
+# Note: Since the user may have `core.autocrlf` set to `true` globaly, we must make sure that we turn it off for the `n` repo first.
+#       Performing a checkout is only safe afterwards.
+(cd "$nRepoDir" && git config core.autocrlf input && git checkout --quiet && PREFIX="$N_PREFIX" "$makeExe" install >/dev/null) || die "Aborting, because n's own installation procedure failed."
 
 # Modify the relevant shell initialization file.
 if (( $skipInitFileUpdate )); then

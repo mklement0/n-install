@@ -4,6 +4,10 @@ Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
 
+* **[v0.3.6](https://github.com/mklement0/n-install/compare/v0.3.5...v0.3.6)** (2017-09-03):
+  * [enhancement] Installation and updating of `n` now guards against unexpected core.autocrlf settings.
+  * [enhancement] Status and error messages improved to consistently mention version spec. 'lts' 
+
 * **[v0.3.5](https://github.com/mklement0/n-install/compare/v0.3.4...v0.3.5)** (2017-02-25):
   * [doc] Fixed manual `n` update instructions, added LTS version hints to CLI help.
 
