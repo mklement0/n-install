@@ -18,10 +18,3 @@ we could just download and unzip it (which gives us the repo snapshot without th
 Unfortunately, the latest release isn't reliably tagged as such, because only
 *explicitly* created releases are reachable by the "Latest Release" URL,  .../releases/latest
 See https://www.evernote.com/shard/s69/nl/1988793911/8fd5ee6f-0bb1-40df-8a58-874b3f67b996/
-
-# Consider temporarily changing git's checkout line-ending configuration to LF
-
-If files are checked out with CRLF, running `n` itself breaks.
-
-See https://github.com/mklement0/n-install/issues/17
-
