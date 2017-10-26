@@ -148,6 +148,9 @@ To bypass that:
 * Invoke `n-install` as detailed below.
 * Open a new terminal tab/window or reload your shell initialization file before using `n` and any installed Node.js versions - see GitHub instructions above.
 
+**Note**: Even when executing `n-install` locally, downloading from this repository
+occurs; specifically, helper scripts `n-update` and `n-uninstall` are downloaded - see below.
+
 ## Installation options
 
 <!-- DO NOT EDIT THE FENCED CODE BLOCK and RETAIN THIS COMMENT: The fenced code block below is updated by `make update-readme/release` with CLI usage information. -->
@@ -299,6 +302,9 @@ This project gratefully depends on the following open-source components, accordi
 Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
+
+* **[v0.3.7](https://github.com/mklement0/n-install/compare/v0.3.6...v0.3.7)** (2017-10-25):
+  * [doc] Clarified that even during local execution after having manually downloaded `n-install` helper scripts are downloaded from this repo.
 
 * **[v0.3.6](https://github.com/mklement0/n-install/compare/v0.3.5...v0.3.6)** (2017-09-03):
   * [enhancement] Installation and updating of `n` now guards against unexpected core.autocrlf settings.
