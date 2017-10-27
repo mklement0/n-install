@@ -121,7 +121,14 @@ version:
   [[ `json -f package.json version` == "$$newVer" ]] || { npm version $$newVer --no-git-tag-version >/dev/null && printf $$'\e[0;33m%s\e[0m\n' 'package.json' || exit; }; \
   [[ $$gitTagVer == '(none)' ]] && newVerMdSnippet="**v$$newVer**" || newVerMdSnippet="**[v$$newVer](`json -f package.json repository.url | sed 's/.git$$//'`/compare/v$$gitTagVer...v$$newVer)**"; \
   grep -Eq "\bv$${newVer//./\.}[^[:digit:]-]" CHANGELOG.md || { { sed -n '1,/^<!--/p' CHANGELOG.md && printf %s $$'\n* '"$$newVerMdSnippet"$$' ('"`date +'%Y-%m-%d'`"$$'):\n  * ???\n' && sed -n '1,/^<!--/d; p' CHANGELOG.md; } > CHANGELOG.tmp.md && mv CHANGELOG.tmp.md CHANGELOG.md; }; \
-  printf -- "-- Version bumped to v$$newVer in source files and package.json (only just-now updated files were printed above, if any).\n   Describe changes in CHANGELOG.md ('make release' will prompt for it).\n   To update the read-me file, run 'make update-readme' (also happens during 'make release').\n"
+  printf -- "-- Version bumped to v$$newVer in source files and package.json (only just-now updated files were printed above, if any).\n   Describe changes in CHANGELOG.md ('make release' will prompt for it).\n   To update the read-me file, run 'make update-readme' (also happens during 'make release').\n"; \
+	$(MAKE) -f $(lastword $(MAKEFILE_LIST)) update-checksums || exit
+
+# Specific to this project:
+# Update the helper-script checksums that are embedded in n-install.
+.PHONY: update-checksums
+update-checksums:
+	@util/update-checksums
 
 # make release [VER=<newVerSpec>] [NOTEST=1]
 # Increments the version number, runs tests, then commits and tags, pushes to origin, prompts to publish to the npm-registry; NOTEST=1 skips tests.

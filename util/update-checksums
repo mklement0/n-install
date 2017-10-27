@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+# Helper script that updates the helper-script SHA-256 checksum embedded
+# in `n-install`
+
+# Helper function for error reporting.
+die() { (( $# > 0 )) && echo "ERROR: $*" >&2; exit 1; }
+
+# Determine path of `n-install` and the helper scripts.
+n_install_bin="$(dirname -- "$BASH_SOURCE")/../bin/n-install"
+n_update_bin="$(dirname -- "$BASH_SOURCE")/../bin/n-update"
+n_uninstall_bin="$(dirname -- "$BASH_SOURCE")/../bin/n-uninstall"
+
+# Find a SHA-256 checksum utility and construct a command.
+shaSumCmd=
+[[ -n $(command -v sha256sum) ]] && shaSumCmd=( 'sha256sum' )
+[[ -z $shaSumCmd && -n $(command -v shasum) ]] && shaSumCmd=( 'shasum' '-a' '256' )
+[[ -n $shaSumCmd ]] || die "No SHA-256 utility found."
+
+chkSumUpdateScript=$("${shaSumCmd[@]}" "$n_update_bin" | awk '{ print $1 }')
+chkSumUninstallScript=$("${shaSumCmd[@]}" "$n_uninstall_bin" | awk '{ print $1 }')
+
+# Updat the embedded checksums in `n-install`.
+# NOTE: This relies on `n-install` containing lines in exactly the following format
+#       with embedded checksums - only the checksums may vary:
+# kSHA256_SUMS=( # SHA-256 checksums for the helper scripts.
+#   "cbe687a7d9a1f8415c67923c6bd793b97c1f9c2e240189136bb100fcd4b933a0  $kUPDATE_SCRIPT"
+#   "9067282260e197a796c3126433401f7a3288c0b4fd3a7407fa4b62f25200499a  $kUNINSTALL_SCRIPT"
+# )
+awk -v chkSumUpdateScript="$chkSumUpdateScript" -v chkSumUninstallScript="$chkSumUninstallScript" '
+  NF == 2 && $NF == "$kUPDATE_SCRIPT\"" { sub(/"[a-f0-9]+/, "\"" chkSumUpdateScript) }
+  NF == 2 && $NF == "$kUNINSTALL_SCRIPT\"" { sub(/"[a-f0-9]+/, "\"" chkSumUninstallScript) }
+  1 # print line
+' "$n_install_bin" > $$.tmp && mv $$.tmp "$n_install_bin" || die
+
+# Make the replaced n-install executable again.
+chmod a+x "$n_install_bin"
+
+echo "Helper-script checksums embedded in n-install successfully updated."

@@ -4,6 +4,10 @@ Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
 
+* **[v0.4.0](https://github.com/mklement0/n-install/compare/v0.3.7...v0.4.0)** (2017-10-26):
+  * [enhancement] The integrity of helper scripts `n-update` and `n-uninstall`, which are downloaded by `n-install` from
+    this repo, is now verified via SHA-256 checksums embedded in `n-install`.
+
 * **[v0.3.7](https://github.com/mklement0/n-install/compare/v0.3.6...v0.3.7)** (2017-10-25):
   * [doc] Clarified that even during local execution after having manually downloaded `n-install` helper scripts are downloaded from this repo.
 

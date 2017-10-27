@@ -40,14 +40,10 @@ kHELPER_SCRIPT_URLS=(
   "${kTHIS_REPO_URL_LONG/\/\/github.com\////raw.githubusercontent.com/}/stable/bin/$kUNINSTALL_SCRIPT" 
 )
   # SHA-256 checksum for the helper scripts.
-  # !! These checksums must be updated whenever `n-update` and `n-uninstall`
-  # !! are modified, which also happens when merely the version number is
-  # !! bumped. 
-  # !! The Makefile takes care of updating after every version bump 
-  # !! (`make version`` or implicitly with `make release``), but you can do it on
-  # !! demand with `make update-checksums`.
-  # !! DO NOT MODIFY THE *FORMAT* OF THIS ARRAY LITERAL - `util/update-checksums`
-  # !! and a test rely on it.
+  # !! DO NOT MODIFY THE *FORMAT* OF THIS ARRAY LITERAL - tests rely on it.
+  # !! *UPDATE THE CHECKSUMS* WHENEVER `n-update` AND `n-uninstall` ARE MODIFIED.
+  # !! FOR NOW, THE Makefile DOES NOT AUTO-UPDATE THE CHECKSUMS - only the tests
+  # !! will catch a mismatch.
 kSHA256_SUMS=(
   "2c974ab30eee3aa2d3811b7794a815ad52b181a2abd87b01678af3f9da67ebcc  $kUPDATE_SCRIPT"
   "638b4deb9e2af72e2f737dc7b53f11bbdab8240e61c36b6b68e0c95560d08e44  $kUNINSTALL_SCRIPT"
@@ -778,13 +774,12 @@ if (( ! helpersCopiedLocally )); then  # Running from GitHub with `curl ... | ba
 
   # Find a SHA-256 checksum utility and construct a verification command.
   shaSumVerifyCmd=
-  [[ -n $(command -v sha256sum) ]] && shaSumVerifyCmd=( 'sha256sum' '-c' '--status' ) # Linux
-  [[ -z $shaSumVerifyCmd && -n $(command -v shasum) ]] && shaSumVerifyCmd=( 'shasum' '-a' '256' '-c' '--status' ) # macOS
+  [[ -n $(command -v sha256sum) ]] && shaSumVerifyCmd=( 'sha256sum' '-c' '--status' )
+  [[ -z $shaSumVerifyCmd && -n $(command -v shasum) ]] && shaSumVerifyCmd=( 'shasum' '-a' '256' '-c' '--status' )
 
   # Download helper scripts from GitHub.
   if [[ -z $shaSumVerifyCmd ]]; then # No SHA checksum-verification utility found - this should not happen.
-
-    warn - <<EOF
+    warn - <<EOF  
 Skipping download of the following helper scripts, because no SHA
 checksum-verification utility is available: ${kHELPER_SCRIPTS[@]} 
 EOF

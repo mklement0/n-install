@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+
+# ---
+# IMPORTANT: Use the following statement at the TOP OF EVERY TEST SCRIPT
+#            to ensure that this package's 'bin/' subfolder is added to the path so that
+#            this package's CLIs can be invoked by their mere filename in the rest
+#            of the script.
+# ---
+PATH=${PWD%%/test*}/bin:$PATH
+
+# Helper function for error reporting.
+die() { (( $# > 0 )) && echo "ERROR: $*" >&2; exit 1; }
+
+# Verify that the checksums embedded in n-install for n-upate and n-install
+# are valid.
+
+n_install_bin=$(command -v n-install)
+n_update_bin=$(command -v n-update)
+n_uninstall_bin=$(command -v n-uninstall)
+
+# Find a SHA-256 checksum utility and construct a verification command.
+shaSumCmd=
+[[ -n $(command -v sha256sum) ]] && shaSumCmd=( 'sha256sum' )
+[[ -z $shaSumCmd && -n $(command -v shasum) ]] && shaSumCmd=( 'shasum' '-a' '256' )
+[[ -n $shaSumCmd ]] || die "No SHA-256 utility found."
+
+shaSumVerifyCmd=( "${shaSumCmd[@]}" )
+shaSumVerifyCmd+=( '-c' )
+
+# Extract embedded checksums from `n-install` and verify them.
+# NOTE: This relies on `n-install` containing lines in exactly the following format
+#       with embedded checksums - only the checksums may vary:
+# kSHA256_SUMS=( # SHA-256 checksums for the helper scripts.
+#   "cbe687a7d9a1f8415c67923c6bd793b97c1f9c2e240189136bb100fcd4b933a0  $kUPDATE_SCRIPT"
+#   "9067282260e197a796c3126433401f7a3288c0b4fd3a7407fa4b62f25200499a  $kUNINSTALL_SCRIPT"
+# )
+sed '
+  /^kSHA256_SUMS=/,/^)/!d; //d
+  s/^[^"]*"//
+  s/"//  
+' "$n_install_bin" | 
+  sed "
+    s@\$kUPDATE_SCRIPT@$n_update_bin@
+    s@\$kUNINSTALL_SCRIPT@$n_uninstall_bin@
+  " | "${shaSumVerifyCmd[@]}" || die "Checksum verification failed - ensure that the helper-script checksums embedded in n-install are current.
+Checksums should be (try running \`make update-checksum\`):
+  $("${shaSumCmd[@]}" "$n_update_bin")
+  $("${shaSumCmd[@]}" "$n_uninstall_bin")
+"
+
+exit 0
