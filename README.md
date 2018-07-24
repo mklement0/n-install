@@ -159,7 +159,7 @@ occurs; specifically, helper scripts `n-update` and `n-uninstall` are downloaded
 $ n-install --help
 
 SYNOPSIS
-  n-install [-t] [-y|-q] [-n] [<version>...]
+  n-install [-t] [-y|-q] [-n] [-a <arch>] [<version>...]
 
 DESCRIPTION
   Directly installs n, the Node.js version manager, which bypasses the need to
@@ -222,6 +222,12 @@ DESCRIPTION
     shell-initialization file; however, note that you'll then have to edit 
     the out-sourced file *manually* - instructions will be printed.
 
+  -a <arch>
+    Specifies a specific architecture to install the specified or implied
+    Node.js version(s) for, e.g. arm64 or x64.
+    This overrides the default behavior of auto-selecting binaries that match
+    the current system.
+
   For more information, see https://git.io/n-install-repo
 
 PREREQUISITES
@@ -276,7 +282,7 @@ If, for some reason, `n-uninstall` doesn't work, do the following:
 
 # License
 
-Copyright (c) 2015-2017 Michael Klement <mklement0@gmail.com> (http://same2u.net), released under the [MIT license](https://spdx.org/licenses/MIT#licenseText).
+Copyright (c) 2015-2018 Michael Klement <mklement0@gmail.com> (http://same2u.net), released under the [MIT license](https://spdx.org/licenses/MIT#licenseText).
 
 ## Acknowledgements
 
@@ -302,6 +308,10 @@ This project gratefully depends on the following open-source components, accordi
 Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
+
+* **[v0.4.1](https://github.com/mklement0/n-install/compare/v0.4.0...v0.4.1)** (2018-07-24):
+  * Adds support for pass-thru option `-a <arch>`, so as to allow overriding the target architecture when installing
+    the initial Node.js version(s) - implements [request #22](https://github.com/mklement0/n-install/issues/22).
 
 * **[v0.4.0](https://github.com/mklement0/n-install/compare/v0.3.7...v0.4.0)** (2017-10-26):
   * [enhancement] The integrity of helper scripts `n-update` and `n-uninstall`, which are downloaded by `n-install` from

@@ -4,6 +4,10 @@ Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
 
+* **[v0.4.1](https://github.com/mklement0/n-install/compare/v0.4.0...v0.4.1)** (2018-07-24):
+  * Adds support for pass-thru option `-a <arch>`, so as to allow overriding the target architecture when installing
+    the initial Node.js version(s) - implements [request #22](https://github.com/mklement0/n-install/issues/22).
+
 * **[v0.4.0](https://github.com/mklement0/n-install/compare/v0.3.7...v0.4.0)** (2017-10-26):
   * [enhancement] The integrity of helper scripts `n-update` and `n-uninstall`, which are downloaded by `n-install` from
     this repo, is now verified via SHA-256 checksums embedded in `n-install`.
