@@ -4,6 +4,14 @@ Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
 
+* **[v0.5.0](https://github.com/mklement0/n-install/compare/v0.4.1...v0.5.0)** (2018-07-25):
+  * [breaking change] It is now the LTS version (long-term support, `lts`) version that is installed by default,
+    because the previous default, `stable`, is obsolete and no longer meaningful: the minor
+    version number being odd or even no loger carries meaning since Node.js embraced semantic versioning.
+    See https://nodejs.org/en/blog/release/v6.0.0/#current-what-happened-to-stable.
+    From now on, choose either `lts` for the latest LTS version or `latest` for the
+    latest in-development version, which [Node.Js](https://nodejs.org/) now calls _current_.
+
 * **[v0.4.1](https://github.com/mklement0/n-install/compare/v0.4.0...v0.4.1)** (2018-07-24):
   * Adds support for pass-thru option `-a <arch>`, so as to allow overriding the target architecture when installing
     the initial Node.js version(s) - implements [request #22](https://github.com/mklement0/n-install/issues/22).

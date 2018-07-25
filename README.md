@@ -27,13 +27,13 @@
 **Installs [`n`](https://github.com/tj/n)**, the **[Node.js](https://nodejs.org/) version manager**, on Unix-like platforms, **without needing to install Node.js first**.  
 Additionally, installs scripts `n-update` for later on-demand updating of `n`, and `n-uninstall` for uninstalling.
 
-The simplest case is **installation of `n` with confirmation prompt**, with subsequent **installation of the latest stable Node.js version**:
+The simplest case is **installation of `n` with confirmation prompt**, with subsequent **installation of the latest LTS Node.js version**:
 
 ```shell
 curl -L https://git.io/n-install | bash
 ```
 
-This is by far **the simplest way to get started with both `n` and Node.js** - even if you're looking to install only the latest stable Node.js version, with no (immediate) plans to install _multiple_ versions.
+This is by far **the simplest way to get started with both `n` and Node.js** - even if you're looking to install only the latest LTS (long-term support) Node.js version, with no (immediate) plans to install _multiple_ versions.
 
 `n` is installed as follows:
 
@@ -46,7 +46,7 @@ This is by far **the simplest way to get started with both `n` and Node.js** - e
     * Directory `$N_PREFIX/bin` is appended to the `$PATH`, unless already present.
     * For other shells, these modification must be performed manually; instructions are provided during installation.
     * You can also explicitly suppress modification with the `-n` option.
-* By default, the latest stable Node.js version is installed; you can suppress that or even specify multiple Node.js versions to install.
+* By default, the latest LTS Node.js version is installed; you can suppress that or even specify multiple Node.js versions to install.
 * Note that any preexisting `n`, Node.js installation must be removed before using this installation method.
 * All installation prerequisites are met by default on OSX and some Linux distros; notably, `git` and `curl` must be present - see [Installing n](#installing-n) for details.
 * After installation, **be sure to open a new terminal tab or window or reload your shell initialization file** before attempting to use `n` / Node.js - see 
@@ -61,19 +61,19 @@ See [Installation options](#installation-options) for details.
 Note: The examples use only `curl` for brevity; to run a given command with `wget` instead, replace `curl -L` with `wget -qO-`.
 -->
 
-* Installation with confirmation prompt to default location `$HOME/n` and installation of the latest stable Node.js version:
+* Installation with confirmation prompt to default location `$HOME/n` and installation of the latest LTS Node.js version:
 
 ```shell
 curl -L https://git.io/n-install | bash
 ```
 
-* Automated installation to default location `$HOME/n` and installation of the latest stable Node.js version:
+* Automated installation to default location `$HOME/n` and installation of the latest LTS Node.js version:
 
 ```shell
 curl -L https://git.io/n-install | bash -s -- -y
 ```
 
-* Automated, _quiet_ installation to default location `$HOME/n` and installation of the latest stable Node.js version; _no status information_
+* Automated, _quiet_ installation to default location `$HOME/n` and installation of the latest LTS Node.js version; _no status information_
 is displayed:
 
 ```shell
@@ -87,7 +87,7 @@ curl -sL https://git.io/n-install | bash -s -- -q
 curl -L https://git.io/n-install | bash -s -- -y lts 0.10
 ```
 
-* Automated installation to custom location `~/util/n`, with subsequent installation of the latest stable Node.js version:
+* Automated installation to custom location `~/util/n`, with subsequent installation of the latest LTS Node.js version:
 
 ```shell
 curl -L https://git.io/n-install | N_PREFIX=~/util/n bash -s -- -y
@@ -169,16 +169,15 @@ DESCRIPTION
   and n-uninstall for uninstallation.
 
   On successful installation of n, the specified Node.js <version>(s)
-  are installed; by default, this is the latest stable Node.js version.
+  are installed; by default, this is the latest LTS Node.js version.
   
   To opt out, specify '-' as the only version argument.
 
   Supported version specifiers:
 
-  * stable ... installs the latest stable version
-  * latest ... the latest version available overall
   * lts    ... the LTS (long-term stability) version
-  * otherwise, specify an explicit version numer, such as '0.12' or '0.10.35'
+  * latest ... the latest version available overall
+  * otherwise, specify an explicit version number, such as '0.12' or '0.10.35'
   
   If multiple versions are specified, the first one will be made active.
 
@@ -237,16 +236,15 @@ PREREQUISITES
   GNU make ... to run n's installation procedure.
   
 EXAMPLES
-    # Install n and the latest stable Node.js version, with 
+    # Install n and the latest LTS Node.js version, with 
     # interactive prompt:
   n-install 
     # Only test if installation to the specified location would work.
   N_PREFIX=~/util/n n-install -t
-    # Automated installation of n, without installing the latest
-    # stable Node.js version.
+    # Automated installation of n, without installing Node.js
   n-install -y -
     # Automated installation of n, followed by automated installation
-    # of the LTS and the latest stable Node.js versions, as well
+    # of the latest LTS and the latest-overall Node.js versions, as well
     # as the latest 0.8.x version.
   n-install -y lts latest 0.8
 ```
@@ -308,6 +306,14 @@ This project gratefully depends on the following open-source components, accordi
 Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
+
+* **[v0.5.0](https://github.com/mklement0/n-install/compare/v0.4.1...v0.5.0)** (2018-07-25):
+  * [breaking change] It is now the LTS version (long-term support, `lts`) version that is installed by default,
+    because the previous default, `stable`, is obsolete and no longer meaningful: the minor
+    version number being odd or even no loger carries meaning since Node.js embraced semantic versioning.
+    See https://nodejs.org/en/blog/release/v6.0.0/#current-what-happened-to-stable.
+    From now on, choose either `lts` for the latest LTS version or `latest` for the
+    latest in-development version, which [Node.Js](https://nodejs.org/) now calls _current_.
 
 * **[v0.4.1](https://github.com/mklement0/n-install/compare/v0.4.0...v0.4.1)** (2018-07-24):
   * Adds support for pass-thru option `-a <arch>`, so as to allow overriding the target architecture when installing

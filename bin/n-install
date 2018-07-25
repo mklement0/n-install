@@ -49,8 +49,8 @@ kHELPER_SCRIPT_URLS=(
   # !! DO NOT MODIFY THE *FORMAT* OF THIS ARRAY LITERAL - `util/update-checksums`
   # !! and a test rely on it.
 kSHA256_SUMS=(
-  "78d75449dbdeeaeaecadc87a1ace740a06904c44258b10304ec4fcb984f4cb9c  $kUPDATE_SCRIPT"
-  "0db5d1f088969b73ebe25e0d884e79cfde3e372200715d715183a8b302f35a90  $kUNINSTALL_SCRIPT"
+  "93330cff80f4cb061823648a29617d525ad92eadeefa0bbb6f28280a0eaa9676  $kUPDATE_SCRIPT"
+  "0b2ed92f41e22861349ecfb3512781ae92cfa4b400cd2ce723677069719fb7b3  $kUNINSTALL_SCRIPT"
 )
 ##
 
@@ -432,7 +432,7 @@ unset CDPATH  # to prevent unpredictable `cd` behavior
 [[ -t 1 ]] || kNO_COLOR=1 # turn off colored output if stdout is not connected to a terminal
 
 # Output version number and exit, if requested. Note that the `ver='...'` statement is automatically updated by `make version VER=<newVer>` - DO keep the 'v' prefix in the variable _definition_.
-[[ $1 == '--version' ]] && { ver='v0.4.1'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://git.io/n-install-repo'; exit 0; }
+[[ $1 == '--version' ]] && { ver='v0.5.0'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://git.io/n-install-repo'; exit 0; }
 
 # !! AS OF n 1.3.0, n ITSELF ONLY WORKS WITH curl, NOT ALSO WITH wget.
 # !! Once n also supports wget, mention wget as an alternative in the help text.
@@ -449,16 +449,15 @@ DESCRIPTION
   and $kUNINSTALL_SCRIPT for uninstallation.
 
   On successful installation of n, the specified Node.js <version>(s)
-  are installed; by default, this is the latest stable Node.js version.
+  are installed; by default, this is the latest LTS Node.js version.
   
   To opt out, specify '-' as the only version argument.
 
   Supported version specifiers:
 
-  * stable ... installs the latest stable version
-  * latest ... the latest version available overall
   * lts    ... the LTS (long-term stability) version
-  * otherwise, specify an explicit version numer, such as '0.12' or '0.10.35'
+  * latest ... the latest version available overall
+  * otherwise, specify an explicit version number, such as '0.12' or '0.10.35'
   
   If multiple versions are specified, the first one will be made active.
 
@@ -517,16 +516,15 @@ PREREQUISITES
   GNU make ... to run n's installation procedure.
   
 EXAMPLES
-    # Install n and the latest stable Node.js version, with 
+    # Install n and the latest LTS Node.js version, with 
     # interactive prompt:
   $kTHIS_NAME 
     # Only test if installation to the specified location would work.
   N_PREFIX=~/util/n $kTHIS_NAME -t
-    # Automated installation of n, without installing the latest
-    # stable Node.js version.
+    # Automated installation of n, without installing Node.js
   $kTHIS_NAME -y -
     # Automated installation of n, followed by automated installation
-    # of the LTS and the latest stable Node.js versions, as well
+    # of the latest LTS and the latest-overall Node.js versions, as well
     # as the latest 0.8.x version.
   $kTHIS_NAME -y lts latest 0.8
 EOF
@@ -586,28 +584,47 @@ shift $((OPTIND - 1))
 
 # Determine what Node.js versions to install later.
 if (( $# == 0 )); then # no operands
-  # Install the latest stable Node.js version by default.
-  versionsToInstall=( 'stable' )
+  # Install the latest LTS Node.js version by default.
+  # !! Our default used to be 'stable' up to v0.4.1, but 'stable' no longer has 
+  # !! meaning - see https://nodejs.org/en/blog/release/v6.0.0/#current-what-happened-to-stable
+  # !! and https://nodesource.com/blog/nodejs-is-semver/
+  # !! and nowadayas https://nodejs.org only offers *2* downloads prominently: LTS and Current,
+  # !! which `n` still calls 'latest' (see below).
+  versionsToInstall=( 'lts' )
 else # operands specified: interpret them as Node.js versions to install
   # *Syntactically* validate version numbers specified, if any: i.e.,
-  # make sure they're either 'stable', 'latest', or either <major>.<minor>.<patch>
-  # or <major>.<minor>. A '-' suppresses the default version ('stable') to install.
+  # make sure they're one of the following:
+  #  * 'lts', 'latest' (or the obsolescent 'stable',
+  #     which may become an alias for 'lts' - see
+  #     https://github.com/tj/n/issues/335#issuecomment-167899989)
+  #  * 'current': The Node.js project now uses 'Current' to refer to the latest 
+  #     in-development release.
+  #     !! `n` doesn't support 'current' as an identifer (yet?) as of v2.1.12,
+  #     !! it still uses 'latest' for that.
+  #     !! For now, as a courtesy, we map 'current' to 'latest', which presumes
+  #     !! that `n` will either never introduce 'current' or, if it does,
+  #     !! make it an alias of 'latest' too.
+  #  * <major>.<minor>.<patch> or <major>.<minor>
+  #  * '-' suppresses installation of the default version.
   # Note that checking for the actual availability of versions would be too time-consuming.
   versionsToInstall=()
   for ver; do
-    case $ver in
+    case $ver in # Note: We do NOT convert to lowercase, for consistency with `n`, which requires case-exact all-lowercase identifiers.
       -)
-        : # means: do NOT install the default ('stable'); typically, 
-          # we expect that to be the only operand, since an explicit list
+        : # means: do NOT install the default Node.Js version; typically, 
+          # we expect that to be the *only* operand, since an explicit list
           # of operands always overrides the default, but we don't enforce this.
         ;;
-      lts|stable|latest|io:stable|io:latest) # symbolic names for latest stable / unstable versions
+      lts|stable|latest|io:stable|io:latest) # symbolic names for latest LTS / in-development versions; 'stable' is obsolescent
         versionsToInstall+=( "$ver" )
+        ;;
+      current) # !! See comments above.
+        versionsToInstall+=( 'latest' )
         ;;
       *) # must be a version number in the form <major>.<minor>[.<patch>]
         componentCount=$(parseSemVer -2 "${ver#io:}" | wc -l)
         (( componentCount == 2 || componentCount == 3 )) ||
-          dieSyntax - <<<"'$ver' is not a valid Node.js version specifier."$'\n'"(Must be 'lts', 'stable', 'latest', or <major>.<minor>[.<patch>].)" # , optionally prefixed with 'io:'
+          dieSyntax - <<<"'$ver' is not a valid Node.js version specifier."$'\n'"(Must be 'lts', 'latest', or <major>.<minor>[.<patch>].)" # , optionally prefixed with 'io:'
         versionsToInstall+=( "$ver" )
         ;;
     esac
@@ -691,8 +708,7 @@ $( (( ${#versionsToInstall[@]} > 0 )) && cat <<EOF2 # !! the last line before 'E
 
 Afterward, THE FOLLOWING Node.js VERSION(S) WILL BE INSTALLED,
 and the first one listed will be made active; 
-  'lts' refers to the LTS (long-term stability) version, 
-  'stable' refers to the latest stable version, and
+  'lts' refers to the LTS (long-term support) version, 
   'latest' to the latest available version.
   '-' means that no versions will be installed:
 
@@ -885,7 +901,7 @@ fi
 === n successfully installed.
 $( (( installedCount > 0 )) && 
   echo "  The active Node.js version is: $("$nBinDir"/node --version)" ||
-  echo "  Run \`n stable\` to install the latest stable Node.js version."
+  echo "  Run \`n LTS\` to install the latest LTS Node.js version."
 )
 
   Run \`n -h\` for help.
