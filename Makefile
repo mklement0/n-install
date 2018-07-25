@@ -1,3 +1,6 @@
+# !!!
+# THIS FILE HAS *CUSTOM* ENTRIES, so DO NOT BLINDLY REPLACE IT WITH A GENERIC COPY FROM THE make-pkg PROJECT.
+# !!!
 	# Since we rely on paths relative to the Makefile location, abort if make isn't being run from there.
 $(if $(findstring /,$(MAKEFILE_LIST)),$(error Please only invoke this makefile from the directory it resides in))
 	# Run all shell commands with bash.
@@ -124,7 +127,7 @@ version:
   printf -- "-- Version bumped to v$$newVer in source files and package.json (only just-now updated files were printed above, if any).\n   Describe changes in CHANGELOG.md ('make release' will prompt for it).\n   To update the read-me file, run 'make update-readme' (also happens during 'make release').\n"; \
 	$(MAKE) -f $(lastword $(MAKEFILE_LIST)) update-checksums || exit
 
-# Specific to this project:
+# [project-specific]  # !! Keep this comment as-is in order to signal to the `update-Makefiles` script in project make-pkg that this file is customized and cannot be blindly replaced with an updated master copy from the make-pkgs project
 # Update the helper-script checksums that are embedded in n-install.
 .PHONY: update-checksums
 update-checksums:
