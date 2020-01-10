@@ -49,8 +49,8 @@ kHELPER_SCRIPT_URLS=(
   # !! DO NOT MODIFY THE *FORMAT* OF THIS ARRAY LITERAL - `util/update-checksums`
   # !! and a test rely on it.
 kSHA256_SUMS=(
-  "93330cff80f4cb061823648a29617d525ad92eadeefa0bbb6f28280a0eaa9676  $kUPDATE_SCRIPT"
-  "0b2ed92f41e22861349ecfb3512781ae92cfa4b400cd2ce723677069719fb7b3  $kUNINSTALL_SCRIPT"
+  "b190ca0f0ed4f05e4efeb4367d520f090cbbe774b18be4e6f0d53403bdb0d50e  $kUPDATE_SCRIPT"
+  "d2ff6cfff920be08d39a3e9bab44e64ccee33ee91abbed927b4440c2f0036ecd  $kUNINSTALL_SCRIPT"
 )
 ##
 
@@ -289,14 +289,14 @@ modifyShellInitFile() {
   else
     case "$(basename -- "$SHELL")" in
       'bash')
-        # !! Sadly, bash ONLY reads ~/.bash_profile in LOGIN shells, and on OSX (Darwin) ALL shells are login shells, so on OSX we must target ~/.bash_profile.
+        # !! Sadly, bash ONLY reads ~/.bash_profile in LOGIN shells, and on macOS (Darwin) ALL shells are login shells, so on OSX we must target ~/.bash_profile.
         [[ $(uname) == 'Darwin' ]] && initFile=~/.bash_profile || initFile=~/.bashrc
         ;;
       'ksh')
         initFile=~/.kshrc
         ;;
       'zsh')
-        initFile=~/.zshrc
+        initFile=${ZDOTDIR:-~}/.zshrc
         ;;
       *) 
         warn - <<EOF
@@ -432,7 +432,7 @@ unset CDPATH  # to prevent unpredictable `cd` behavior
 [[ -t 1 ]] || kNO_COLOR=1 # turn off colored output if stdout is not connected to a terminal
 
 # Output version number and exit, if requested. Note that the `ver='...'` statement is automatically updated by `make version VER=<newVer>` - DO keep the 'v' prefix in the variable _definition_.
-[[ $1 == '--version' ]] && { ver='v0.5.0'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://git.io/n-install-repo'; exit 0; }
+[[ $1 == '--version' ]] && { ver='v0.5.1'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://git.io/n-install-repo'; exit 0; }
 
 # !! AS OF n 1.3.0, n ITSELF ONLY WORKS WITH curl, NOT ALSO WITH wget.
 # !! Once n also supports wget, mention wget as an alternative in the help text.

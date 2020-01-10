@@ -41,7 +41,7 @@ for i in {1..6}; do
   
   (shopt -s dotglob; rm -rf "$tmpDir"/*)
 
-  descr= ok=0 nodeShouldInstall=0 iojsShouldInstall=0
+  descr= ok=0 nodeShouldInstall=0
   case $i in
     1) # with invalid simulated user input
       runInstall <<<'z' && { rm -rf "$tmpDir"; die "Installation succeeded despite invalid simulated user input."; }
@@ -61,16 +61,15 @@ for i in {1..6}; do
       runInstall -y && ok=1
       nodeShouldInstall=1
       ;;
-    4) # unattended installation w/o any Node.js/io.js versions
+    4) # unattended installation w/o any Node.js versions
       descr='unattended: n only'
       runInstall -y - && ok=1
       nodeShouldInstall=0
       ;;
-    5) # unattended installation latest LTS Node.js and latest io.js version.
-      descr='unattended: n + LTS Node.js + latest io.js'
-      runInstall -y lts io:latest && ok=1
+    5) # unattended installation latest LTS Node.js version.
+      descr='unattended: n + LTS Node.j'
+      runInstall -y lts && ok=1
       nodeShouldInstall=1
-      iojsShouldInstall=1
       ;;
     6) # unattended installation FROM GITHUB
       descr='unattended: default FROM GITHUB (will not succeed if not yet pushed)'
@@ -98,10 +97,6 @@ for i in {1..6}; do
   # Node.js executables
   for f in 'bin/node' 'bin/npm'; do
     [[ -x $tmpPrefixDir/$f ]] && { if (( ! nodeShouldInstall )); then dieUnexpectedlyFound; fi; } || { if (( nodeShouldInstall )); then dieNotFound; fi; }
-  done
-  # io.js executables (note that iojs installs the Node.js executables PLUS 'iojs')
-  for f in 'bin/iojs'; do
-    [[ -x $tmpPrefixDir/$f ]] && { if (( ! iojsShouldInstall )); then dieUnexpectedlyFound; fi; } || { if (( iojsShouldInstall )); then dieNotFound; fi; }
   done
 
 done

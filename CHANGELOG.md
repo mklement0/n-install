@@ -4,6 +4,9 @@ Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
 
+* **[v0.5.1](https://github.com/mklement0/n-install/compare/v0.5.0...v0.5.1)** (2020-01-10):
+  * [fix] Fixes #28: support for a custom zsh initialization-file directory via environment variable `ZDOTDIR`.
+
 * **[v0.5.0](https://github.com/mklement0/n-install/compare/v0.4.1...v0.5.0)** (2018-07-25):
   * [breaking change] It is now the LTS version (long-term support, `lts`) version that is installed by default,
     because the previous default, `stable`, is obsolete and no longer meaningful: the minor

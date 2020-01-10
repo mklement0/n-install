@@ -5,7 +5,7 @@
 
 **Contents**
 
-- [n-install &mdash; introduction](#n-install-&mdash-introduction)
+- [n-install &mdash; introduction](#n-install-mdash-introduction)
 - [Examples](#examples)
 - [Installing n](#installing-n)
   - [Installation from GitHub](#installation-from-github)
@@ -292,12 +292,12 @@ This project gratefully depends on the following open-source components, accordi
 
 ## npm dependencies
 
-* [doctoc (D)](https://github.com/thlorenz/doctoc)
-* [json (D)](https://github.com/trentm/json)
-* [replace (D)](https://github.com/harthur/replace)
+* [doctoc (D)](https://github.com/thlorenz/doctoc#readme)
+* [json (D)](https://github.com/trentm/json#readme)
+* [replace (D)](https://github.com/ALMaclaine/replace#readme)
 * [semver (D)](https://github.com/npm/node-semver#readme)
-* [tap (D)](https://github.com/isaacs/node-tap)
-* [urchin (D)](https://github.com/tlevine/urchin)
+* [tap (D)](http://www.node-tap.org/)
+* [urchin (D)](https://github.com/tlevine/urchin#readme)
 
 <!-- DO NOT EDIT THE NEXT CHAPTER and RETAIN THIS COMMENT: The next chapter is updated by `make update-readme/release` with the contents of 'CHANGELOG.md'. ALSO, LEAVE AT LEAST 1 BLANK LINE AFTER THIS COMMENT. -->
 
@@ -307,11 +307,14 @@ Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
 
+* **[v0.5.1](https://github.com/mklement0/n-install/compare/v0.5.0...v0.5.1)** (2020-01-10):
+  * [fix] Fixes #28: support for a custom zsh initialization-file directory via environment variable `ZDOTDIR`.
+
 * **[v0.5.0](https://github.com/mklement0/n-install/compare/v0.4.1...v0.5.0)** (2018-07-25):
   * [breaking change] It is now the LTS version (long-term support, `lts`) version that is installed by default,
     because the previous default, `stable`, is obsolete and no longer meaningful: the minor
-    version number being odd or even no longer carries meaning since Node.js embraced semantic versioning.
-    See https://nodesource.com/blog/nodejs-is-semver/ and https://nodejs.org/en/blog/release/v6.0.0/#current-what-happened-to-stable.
+    version number being odd or even no loger carries meaning since Node.js embraced semantic versioning.
+    See https://nodejs.org/en/blog/release/v6.0.0/#current-what-happened-to-stable.
     From now on, choose either `lts` for the latest LTS version or `latest` for the
     latest in-development version, which [Node.Js](https://nodejs.org/) now calls _current_.
 

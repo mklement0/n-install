@@ -2,7 +2,7 @@
   "name": "n-install",
   "description": "installs n, the Node.js version manager, without needing to install Node.js first",
   "private": true,
-  "version": "0.5.0",
+  "version": "0.5.1",
   "os": [
     "darwin",
     "linux"
@@ -28,7 +28,6 @@
     "n",
     "install",
     "Node.js",
-    "io.js",
     "manage",
     "versions"
   ],
@@ -43,9 +42,9 @@
   "devDependencies": {
     "doctoc": "^0.13.0",
     "json": "^9.0.3",
-    "replace": "^0.3.0",
+    "replace": "^1.1.5",
     "semver": "^4.2.0",
-    "tap": "^0.6.0",
+    "tap": "^14.10.5",
     "urchin": "^0.0.5"
   }
 }
