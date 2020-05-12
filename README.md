@@ -41,7 +41,7 @@ This is by far **the simplest way to get started with both `n` and Node.js** - e
     * When overriding, it is advisable to choose a user location - typically, a subfolder of `~` (at any level) - so as to avoid the need to use `sudo` for installation of global `npm` packages.
     * Either way, the target directory must either not exist yet or be empty.
     * Using a dedicated directory to hold both `n` and the Node.js versions greatly simplifies later uninstallation.
-* If your shell is **`bash`, `ksh`, or `zsh`, the relevant shell initialization file is modified**:
+* If your shell (your default interactive shell, as reflected in environment variable `$SHELL`) is **`bash`, `ksh`, or `zsh`, the relevant shell initialization file is modified**:
     * Environment variable `N_PREFIX` is defined to point to the installation directory.
     * Directory `$N_PREFIX/bin` is appended to the `$PATH`, unless already present.
     * For other shells, these modification must be performed manually; instructions are provided during installation.
@@ -104,7 +104,7 @@ Among the platforms supported by `n`, any Unix-like platform with the following 
 * [`git`](http://git-scm.com/)
 * [GNU `make`](http://www.gnu.org/software/make/)
 
-These prerequisites are met by default on OSX and on at least some Linux platforms.
+These prerequisites are met by default on macOS and on at least some Linux platforms.
 What's missing from some by default is `git` and/or `curl`, which, however, are easy to install from the respective package managers (e.g., `sudo apt-get install git curl` on Debian, or `sudo yum install git` on Fedora).
 `bash` and `curl` are required by `n` itself as well.
 
