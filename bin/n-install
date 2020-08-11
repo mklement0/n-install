@@ -635,7 +635,7 @@ fi
 # !! that either n or Node.js are already installed - whether they were installed with
 # !! this utility or not.
 existingExes=()
-for exe in n node iosj npm; do
+for exe in n node iojs npm; do
   # Note that `command -v` on Linux and OSX supports multiple arguments, but POSIX mandates only 1.
   exePath=$(command -v "$exe") && existingExes+=( "$exePath" )
 done
