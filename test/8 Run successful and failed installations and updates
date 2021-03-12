@@ -10,6 +10,10 @@ PATH=${PWD%%/test*}/bin:$PATH
 # Test override: Skip the check for an existing n / npm / node installation 
 export N_INSTALL_TEST_OVERRIDE_SKIP_EXISTING_INSTALLATION_TEST=1
 
+# Create a temp. dir.
+tmpDir=$(mktemp -d -t XXXX) || die # Works on both macOS and Linux; note: dir. name will have random extension on macOS (e.g., '.../XXXX.bJViLcM3') and none on Linux (e.g., '.../vXDA')
+tmpPrefixDir="$tmpDir/n"
+
 # Helper function for error reporting.
 die() { (( $# > 0 )) && echo "ERROR: $*" >&2; exit 1; }
 
@@ -28,10 +32,9 @@ runUpdate() {
 #### !! Must be kept in sync with master copies in 'n-install'.
 kTHIS_REPO_URL_LONG='https://github.com/mklement0/n-install' # This script's source repository in LONG form - needed for deriving raw.githubusercontent.com URLs from it.
 #### 
-
-# Create a temp. dir.
-tmpDir=$(mktemp -d -t XXXX) || die # Works on both macOS and Linux; note: dir. name will have random extension on macOS (e.g., '.../XXXX.bJViLcM3') and none on Linux (e.g., '.../vXDA')
-tmpPrefixDir="$tmpDir/n"
+# Derive the URL and use the *master* branch (not the 'stable' label), so as to use the most recent code in prepraration for a new release.
+# !! By contrast, https://git.io/n-install points to https://raw.githubusercontent.com/mklement0/n-install/stable/bin/n-install i.e. the *stable* label.
+url="${kTHIS_REPO_URL_LONG/\/\/github.com\////raw.githubusercontent.com/}/master/bin/n-install"
 
 # ----------- INSTALLATION
 
@@ -70,8 +73,8 @@ for i in {1..6}; do
       nodeShouldInstall=1
       ;;
     6) # unattended installation DIRECTLY FROM GITHUB - !! This may fail if the latest changes have not yet been pushed.
-      descr='unattended: default installation DIRECTLY FROM GITHUB (may fail if the latest changes have not yet been pushed)'
-      N_PREFIX="$tmpPrefixDir" N_INSTALL_TEST_OVERRIDE_SHELL_INIT_FILE="$tmpDir/initFile" bash <(curl -L "${kTHIS_REPO_URL_LONG/\/\/github.com\////raw.githubusercontent.com/}/master/bin/n-install") -y - && ok=1
+      descr="unattended: default installation DIRECTLY FROM GITHUB (NOTE: may fail if the latest changes have not yet been pushed with \`make push\`): $url"
+      curl -L "$url" | N_PREFIX="$tmpPrefixDir" N_INSTALL_TEST_OVERRIDE_SHELL_INIT_FILE="$tmpDir/initFile" bash -s -- -y - && ok=1
       nodeShouldInstall=0
       ;;
     *)
@@ -81,21 +84,25 @@ for i in {1..6}; do
 
   (( ok )) || die "Installation failed unexpectedly: $descr; inspect the target dir.: '$tmpDir'"
 
-  # Spot-check for crucial files and dirs:
+  # -- 
+  # Spot-check for crucial files and dirs in the local install dir:
+  # --
 
-  # n's files and helper scripts
+  # Check for expected presence of n's files and helper scripts
   f='n/.repo/.git'; [[ -d $tmpPrefixDir/$f ]] || dieNotFound
   f='bin/n'; [[ -x $tmpPrefixDir/$f ]] || dieNotFound
 
-  # helper scripts
+  # Check for expected presence of helper scripts
   for f in 'bin/n-update' 'bin/n-uninstall'; do
     [[ -x $tmpPrefixDir/$f ]] || dieNotFound
   done
 
-  # Node.js executables
+  # Check for expected presence of Node.js executables
   for f in 'bin/node' 'bin/npm'; do
     [[ -x $tmpPrefixDir/$f ]] && { if (( ! nodeShouldInstall )); then dieUnexpectedlyFound; fi; } || { if (( nodeShouldInstall )); then dieNotFound; fi; }
   done
+
+  # --
 
 done
 

@@ -12,6 +12,7 @@ kMIN_BASH_VERSION='3.2'  # due to use of =~, we require at least 3.2
 
 ##### IMPORTANT: These names must, at least in part, be kept in sync with their counterparts in 'n-update' and 'n-uninstall'.
 kINSTALLER_NAME=n-install  # This script's name; note that since we'll typically be running via curl directly from GitHub, using $(basename "$BASH_SOURCE") to determine the name is not an option.
+#  Note: The actual *installation* URL is http://git.io/n-install which redirects to https://raw.githubusercontent.com/mklement0/n-install/stable/bin/n-install
 kTHIS_REPO_URL='https://git.io/n-install-repo' # This script's source repository - SHORT, git.io-based form.
 kTHIS_REPO_URL_LONG='https://github.com/mklement0/n-install' # This script's source repository in LONG form - needed for deriving raw.githubusercontent.com URLs from it.
 kPREFIX_DIR=${N_PREFIX:-$HOME/n} # The target prefix directory, inside which both a dir. for n itself and the active node version's dirs. will be located.
@@ -35,9 +36,11 @@ kHELPER_SCRIPTS=(
   "$kUPDATE_SCRIPT"
   "$kUNINSTALL_SCRIPT"
 ) 
+mainOrStable='stable'
+[[ -n $N_INSTALL_TEST_OVERRIDE_SHELL_INIT_FILE ]] && mainOrStable='main' # override for testing: use the latest rather than the officially stable code.
 kHELPER_SCRIPT_URLS=( 
-  "${kTHIS_REPO_URL_LONG/\/\/github.com\////raw.githubusercontent.com/}/stable/bin/$kUPDATE_SCRIPT" 
-  "${kTHIS_REPO_URL_LONG/\/\/github.com\////raw.githubusercontent.com/}/stable/bin/$kUNINSTALL_SCRIPT" 
+  "${kTHIS_REPO_URL_LONG/\/\/github.com\////raw.githubusercontent.com/}/$mainOrStable/bin/$kUPDATE_SCRIPT" 
+  "${kTHIS_REPO_URL_LONG/\/\/github.com\////raw.githubusercontent.com/}/$mainOrStable/bin/$kUNINSTALL_SCRIPT" 
 )
   # SHA-256 checksum for the helper scripts.
   # !! These checksums must be updated whenever `n-update` and `n-uninstall`
@@ -714,7 +717,7 @@ if [[ -d $N_PREFIX ]]; then
   didExist=1  
   isDirEmpty "$N_PREFIX" || die - 3 <<EOF
 Target directory '$N_PREFIX' already exists and is not empty.
-Make sure it is completely empty, then try again.
+Remove it or make sure it is completely empty, then try again.
 EOF
 
 fi

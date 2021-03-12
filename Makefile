@@ -5,11 +5,13 @@
 $(if $(findstring /,$(MAKEFILE_LIST)),$(error Please only invoke this makefile from the directory it resides in))
 	# Run all shell commands with bash.
 SHELL := bash
-export N_PREFIX := 
 	# Add the following to the PATH:
 	# !! Note that this extended path only takes effect in (a) recipe commands that are (b) true shell commands (not optimized away) - when in doubt, simply append ';'
 	# !! To also use the extended path in $(shell ...) function calls, use $(shell PATH="$(PATH)" ...).
-export PATH := ./node_modules/.bin:$(PATH) # !! So as to make this work in PowerShell too, use './' to start the path, NOT $(PWD)
+	#   * ./node_modules/.bin, so that helper npm modules used by this Makefile, such as `json`, are found.
+	#   * !! Additionally, we add $N_PREFIX/bin to the path to make sure that `node` is available for targets such as `verinfo`
+	#     !! ?? Inexplicably, this $PATH addition, which the caller already does see, is NOT available when shell commands are run here. Why?
+export PATH := $(N_PREFIX)/bin:./node_modules/.bin:$(PATH) # !! So as to make this work in PowerShell too, use './' to start the path, NOT $(PWD)
 	# Sanity check: git repo must exist.
 $(if $(shell [[ -d .git ]] && echo ok),,$(error No git repo found in current dir. Please at least initialize one with 'git init'))
 	# Sanity check: make sure dev dependencies (and npm) are installed - skip this check only for certain generic targets (':' is the pseudo target used by the `list` target's recipe.)
@@ -135,8 +137,9 @@ update-checksums:
 	@util/update-checksums
 
 # make release [VER=<newVerSpec>] [NOTEST=1]
-# Increments the version number, runs tests, then commits and tags, pushes to origin, prompts to publish to the npm-registry; NOTEST=1 skips tests.
-# VER=<newVerSpec> is mandatory, unless the version number in package.json is ahead of the latest Git version tag.
+# Increments the version number, runs tests, then commits and tags, pushes to origin, prompts to publish to the npm-registry, unless the package is *private*; 
+# NOTEST=1 skips tests.
+# VER=<newVerSpec> may be passed on the command line; otherwise, it is prompted for.
 .PHONY: release
 release: _need-origin _need-npm-credentials _need-master-branch _need-clean-ws-or-no-untracked-files version test
 	@newVer=`json -f package.json version` || exit; [[ $$newVer == *-* ]] && isPreRelease=1 || isPreRelease=0; \
