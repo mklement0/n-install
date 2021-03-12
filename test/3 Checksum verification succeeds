@@ -43,7 +43,7 @@ sed '
     s@\$kUPDATE_SCRIPT@$n_update_bin@
     s@\$kUNINSTALL_SCRIPT@$n_uninstall_bin@
   " | "${shaSumVerifyCmd[@]}" || die "Checksum verification failed - ensure that the helper-script checksums embedded in n-install are current.
-Checksums should be (try running \`make update-checksum\`):
+Checksums should be (try running \`make update-checksums\`):
   $("${shaSumCmd[@]}" "$n_update_bin")
   $("${shaSumCmd[@]}" "$n_uninstall_bin")
 "

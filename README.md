@@ -41,7 +41,7 @@ This is by far **the simplest way to get started with both `n` and Node.js** - e
     * When overriding, it is advisable to choose a user location - typically, a subfolder of `~` (at any level) - so as to avoid the need to use `sudo` for installation of global `npm` packages.
     * Either way, the target directory must either not exist yet or be empty.
     * Using a dedicated directory to hold both `n` and the Node.js versions greatly simplifies later uninstallation.
-* If your shell (your default interactive shell, as reflected in environment variable `$SHELL`) is **`bash`, `ksh`, or `zsh`, the relevant shell initialization file is modified**:
+* If your shell (your default interactive shell, as reflected in environment variable `$SHELL`) is **`bash`, `ksh`, `zsh`, `fish`, or `pwsh` (PowerShell), the relevant shell initialization file is modified**:
     * Environment variable `N_PREFIX` is defined to point to the installation directory.
     * Directory `$N_PREFIX/bin` is appended to the `$PATH`, unless already present.
     * For other shells, these modification must be performed manually; instructions are provided during installation.
@@ -108,7 +108,7 @@ These prerequisites are met by default on macOS and on at least some Linux platf
 What's missing from some by default is `git` and/or `curl`, which, however, are easy to install from the respective package managers (e.g., `sudo apt-get install git curl` on Debian, or `sudo yum install git` on Fedora).
 `bash` and `curl` are required by `n` itself as well.
 
-Irrespective of the installation method chosen below, no further steps are required if your default shell is either **Bash, Ksh, or Zsh**.  
+Irrespective of the installation method chosen below, no further steps are required if your default shell is either **`bash`, `ksh`, `zsh`, `fish`, or `pwsh` (PowerShell)**.  
 For other shells, manual updating of the relevant initialization file is required; detailed instructions are provided during installation.
 
 ## Installation from GitHub
@@ -189,8 +189,8 @@ DESCRIPTION
   absolute path before invocation; either way, however, the installation
   directory must either not exist yet or be empty.
 
-  If your shell is Bash, Ksh, or Zsh, the relevant initialization file will be
-  modified so as to:
+  If your shell is bash, bsh, zsh, fish, or pwsh (PowerShell), the relevant
+  initialization file will be modified so as to:
    - export environment variable $N_PREFIX to point to the installation dir.
    - ensure that the directory containing the n executable, $N_PREFIX/bin,
      is in the $PATH.
@@ -280,7 +280,7 @@ If, for some reason, `n-uninstall` doesn't work, do the following:
 
 # License
 
-Copyright (c) 2015-2018 Michael Klement <mklement0@gmail.com> (http://same2u.net), released under the [MIT license](https://spdx.org/licenses/MIT#licenseText).
+Copyright (c) 2015-2021 Michael Klement <mklement0@gmail.com> (http://same2u.net), released under the [MIT license](https://spdx.org/licenses/MIT#licenseText).
 
 ## Acknowledgements
 

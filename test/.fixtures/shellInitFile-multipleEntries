@@ -1,8 +1,8 @@
 
 # Multiple N_PREFIX= entries.
 
-export N_PREFIX=one
+export N_PREFIX="one"
 
-:; N_PREFIX='/Users/jdoe/n' 
+:; N_PREFIX="/Users/jdoe/n"
 
 # original last line

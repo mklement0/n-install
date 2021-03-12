@@ -50,7 +50,7 @@ kHELPER_SCRIPT_URLS=(
   # !! and a test rely on it.
 kSHA256_SUMS=(
   "b190ca0f0ed4f05e4efeb4367d520f090cbbe774b18be4e6f0d53403bdb0d50e  $kUPDATE_SCRIPT"
-  "d2ff6cfff920be08d39a3e9bab44e64ccee33ee91abbed927b4440c2f0036ecd  $kUNINSTALL_SCRIPT"
+  "af156721c76efc6ad06120989168095bd908cd82b97094f1bd59d742aabe44c5  $kUNINSTALL_SCRIPT"
 )
 ##
 
@@ -259,13 +259,44 @@ clearDir() ( # execute in subshell to localize effect of shopt
 # Print the line that a shell initialization file must contain for `n` (and 
 # `n-update` and `n-uninstall`) to work correctly.
 getShellInitFileLine() {
-  # Synthesize the - single - line to add to the init file, using Bash/Ksh/Zsh syntax.
-  # Definition of the N_PREFIX environment variable plus ensuring that
-  # $N_PREFIX/bin is in the $PATH, followed by the identifying comment.
-  printf '%s; %s %s' \
-    "export N_PREFIX=\"${N_PREFIX/#$HOME/\$HOME}\"" \
-    "[[ :\$PATH: == *\":\$N_PREFIX/bin:\"* ]] || PATH+=\":\$N_PREFIX/bin\"" \
-    "$kINIT_FILE_LINE_ID"
+
+    local userDefaultShell="$1" cmd_setEnvVar cmd_addToPath
+
+    # Synthesize the - single - line to add to the init file.
+    # Definition of the N_PREFIX environment variable plus ensuring that
+    # $N_PREFIX/bin is in the $PATH, followed by the identifying comment.
+    # E.g.:
+    #   POSIX-compatible shells:
+    #      export N_PREFIX="$HOME/n"; [[ :$PATH: == *":$N_PREFIX/bin:"* ]] || PATH+=":$N_PREFIX/bin"  # Added by n-install (see http://git.io/n-install-repo).
+    #   fish:
+    #      set -x N_PREFIX "$HOME/n"; contains $N_PREFIX $PATH; or set -a PATH $N_PREFIX # Added by n-install (see http://git.io/n-install-repo).
+    #   pwsh (PowerShell):
+    #      $env:N_PREFIX="$HOME/n"; if ($env:PATH -split ":" -notcontains "$env:N_PREFIX/bin") { $env:PATH += ":$env:N_PREFIX/bin" } # Added by n-install (see http://git.io/n-install-repo).
+
+    # IMPORTANT:
+    #   To facilitate language-neutral, regex-based extracton of the $N_PREFIX value in in `n-uninstall`:
+    #     * Use NO WITHESPACE AROUND "=" in `...N_PREFIX="..."...` and EXACTLY ONE SPACE in `...NPREFIX "..."`
+    #     * Use ONLY VARIABLE REFERENCES IN THE FORM `$FOO` - fortunately, even though PowerShell generally requires
+    #       the form $env:FOO for environment variables, it does have a built-in $HOME variable too.
+    case $userDefaultShell in
+      'fish')
+        cmd_setEnvVar="set -x N_PREFIX \"${N_PREFIX/#$HOME/\$HOME}\""
+        cmd_addToPath='contains $N_PREFIX $PATH; or set -a PATH $N_PREFIX'
+        ;;
+      'pwsh') # PowerShell      
+        cmd_setEnvVar="\$env:N_PREFIX=\"${N_PREFIX/#$HOME/\$HOME}\"" # !! Use `$HOME`, not `$env:HOME` - see above.
+        cmd_addToPath='if ($env:PATH -split ":" -notcontains "$env:N_PREFIX/bin") { $env:PATH += ":$env:N_PREFIX/bin" }'
+        ;;
+      *) # all POSIX-compatible shells
+        cmd_setEnvVar="export N_PREFIX=\"${N_PREFIX/#$HOME/\$HOME}\""
+        cmd_addToPath='[[ :$PATH: == *":$N_PREFIX/bin:"* ]] || PATH+=":$N_PREFIX/bin"'
+        ;;
+    esac
+
+    # NOTE: This currently relies on ALL supported shells using:
+    #         ";" as the statement separator
+    #         "#" as the comment character. 
+    printf '%s; %s %s' "$cmd_setEnvVar" "$cmd_addToPath" "$kINIT_FILE_LINE_ID"
 }
 
 # SYNOPSIS
@@ -278,18 +309,23 @@ getShellInitFileLine() {
 #  Outputs the full path of the initialization file modified.
 modifyShellInitFile() {
 
-  local line initFile existingLine initFileContents
+  local line initFile existingLine initFileContents userDefaultShell
+
+  userDefaultShell="$(basename -- "$SHELL")"
+  [[ -z $userDefaultShell ]] && userDefaultShell='sh'
 
   # Get the line to add to the init file.
-  line=$(getShellInitFileLine)
+  line=$(getShellInitFileLine $userDefaultShell)
 
   # Determine the shell-specific initialization file.
-  if [[ -n $INSTALL_N_TEST_OVERRIDE_SHELL_INIT_FILE ]]; then # override for testing
-      initFile=$INSTALL_N_TEST_OVERRIDE_SHELL_INIT_FILE
+  if [[ -n $N_INSTALL_TEST_OVERRIDE_SHELL_INIT_FILE ]]; then # override for testing
+      initFile=$N_INSTALL_TEST_OVERRIDE_SHELL_INIT_FILE
   else
-    case "$(basename -- "$SHELL")" in
+    # IMPORTANT:
+    #   This STATEMENT MUST BE KEPT IN SYNC with cleanUpShellInitFile() in n-uninstall.
+    case $userDefaultShell in
       'bash')
-        # !! Sadly, bash ONLY reads ~/.bash_profile in LOGIN shells, and on macOS (Darwin) ALL shells are login shells, so on OSX we must target ~/.bash_profile.
+        # !! Sadly, bash ONLY reads ~/.bash_profile in LOGIN shells, and on macOS (Darwin) ALL shells are login shells, so on macOS we must target ~/.bash_profile.
         [[ $(uname) == 'Darwin' ]] && initFile=~/.bash_profile || initFile=~/.bashrc
         ;;
       'ksh')
@@ -297,6 +333,12 @@ modifyShellInitFile() {
         ;;
       'zsh')
         initFile=${ZDOTDIR:-~}/.zshrc
+        ;;
+      'fish')
+        initFile=${XDG_CONFIG_HOME:-~/.config}/fish/config.fish
+        ;;
+      'pwsh') # PowerShell
+        initFile=${XDG_CONFIG_HOME:-~/.config}/powershell/Microsoft.PowerShell_profile.ps1
         ;;
       *) 
         warn - <<EOF
@@ -312,6 +354,10 @@ EOF
         ;;
     esac
   fi
+
+  # To be safe: create the directory for the initialization file on demand.
+  # Presumably this is only ever necessary for PowerShell (pwsh).
+  mkdir -p "$(dirname -- "$initFile")" || die
 
   if [[ -f $initFile ]]; then
 
@@ -469,8 +515,8 @@ DESCRIPTION
   absolute path before invocation; either way, however, the installation
   directory must either not exist yet or be empty.
 
-  If your shell is Bash, Ksh, or Zsh, the relevant initialization file will be
-  modified so as to:
+  If your shell is bash, bsh, zsh, fish, or pwsh (PowerShell), the relevant
+  initialization file will be modified so as to:
    - export environment variable \$N_PREFIX to point to the installation dir.
    - ensure that the directory containing the n executable, \$N_PREFIX/bin,
      is in the \$PATH.
@@ -631,27 +677,29 @@ else # operands specified: interpret them as Node.js versions to install
   done
 fi
 
-# !! We prevent installation if the `n` or `npm` or `node` or `iojs` binaries are in the path, implying 
+# !! We prevent installation if the `n` or `npm` or `node` binaries are in the path, implying 
 # !! that either n or Node.js are already installed - whether they were installed with
 # !! this utility or not.
-existingExes=()
-for exe in n node iojs npm; do
-  # Note that `command -v` on Linux and OSX supports multiple arguments, but POSIX mandates only 1.
-  exePath=$(command -v "$exe") && existingExes+=( "$exePath" )
-done
-if (( ${#existingExes[@]} > 0 )); then
+if [[ $N_INSTALL_TEST_OVERRIDE_SKIP_EXISTING_INSTALLATION_TEST != '1' ]]; then # override for testing
+  existingExes=()
+  for exe in n node npm; do
+    # Note that `command -v` on Linux and OSX supports multiple arguments, but POSIX mandates only 1.
+    exePath=$(command -v "$exe") && existingExes+=( "$exePath" )
+  done
+  if (( ${#existingExes[@]} > 0 )); then
 
-  die - 3 <<EOF
-Aborting, because n and/or Node.js-related binaries are already
-in the \$PATH:
-         
-$(printf '       %s\n' "${existingExes[@]}")
+    die - 3 <<EOF
+  Aborting, because n and/or Node.js-related binaries are already
+  in the \$PATH:
+          
+  $(printf '       %s\n' "${existingExes[@]}")
 
-Please remove any existing n, Node.js installation, then try 
-again.
-$([[ -n $(command -v n) ]] && printf %s "If you previously installed n via $kTHIS_REPO_URL,"$'\n'"run \`$kUNINSTALL_SCRIPT\` to uninstall.")
+  Please remove any existing n, Node.js installation, then try 
+  again.
+  $([[ -n $(command -v n) ]] && printf %s "If you previously installed n via $kTHIS_REPO_URL,"$'\n'"run \`$kUNINSTALL_SCRIPT\` to uninstall.")
 EOF
 
+  fi
 fi
 
 N_PREFIX=$kPREFIX_DIR
@@ -716,8 +764,8 @@ and the first one listed will be made active;
  
 EOF2
 )
-If your shell is Bash, Ksh, or Zsh, the relevant initialization file will be
-modified in order to:
+If your shell is bash, bsh, zsh, fish, or pwsh (PowerShell), the relevant 
+initialization file will be modified in order to:
  - export environment variable \$N_PREFIX.
  - ensure that \$N_PREFIX/bin is in the \$PATH
 For any other shell you'll have to make these modifications yourself (details
@@ -901,7 +949,7 @@ fi
 === n successfully installed.
 $( (( installedCount > 0 )) && 
   echo "  The active Node.js version is: $("$nBinDir"/node --version)" ||
-  echo "  Run \`n LTS\` to install the latest LTS Node.js version."
+  echo "  Run \`n lts\` to install the latest LTS Node.js version."
 )
 
   Run \`n -h\` for help.

@@ -7,6 +7,8 @@
 #            of the script.
 # ---
 PATH=${PWD%%/test*}/bin:$PATH
+# Test override: Skip the check for an existing n / npm / node installation 
+export N_INSTALL_TEST_OVERRIDE_SKIP_EXISTING_INSTALLATION_TEST=1
 
 # Helper function for error reporting.
 die() { (( $# > 0 )) && echo "ERROR: $*" >&2; exit 1; }
@@ -16,7 +18,7 @@ dieUnexpectedlyFound() { echo "ERROR: $descr: did not expect to find in '$tmpDir
 
 runInstall() {
   # Pass the shell initialization file using INSTALL_N_TEST_OVERRIDE_PREFIX_DIR as an override.
-  N_PREFIX="$tmpPrefixDir" INSTALL_N_TEST_OVERRIDE_SHELL_INIT_FILE="$tmpDir/initFile" n-install "$@"
+  N_PREFIX="$tmpPrefixDir" N_INSTALL_TEST_OVERRIDE_SHELL_INIT_FILE="$tmpDir/initFile" n-install "$@"
 }
 
 runUpdate() {
@@ -27,12 +29,8 @@ runUpdate() {
 kTHIS_REPO_URL_LONG='https://github.com/mklement0/n-install' # This script's source repository in LONG form - needed for deriving raw.githubusercontent.com URLs from it.
 #### 
 
-# !! Since n-install will categorically refuse to run with a `node` executable in the $PATH,
-# !! we must remove that executable's directory from the $PATH beforehand.
-PATH=$(./.fixtures/getNoNodePath)
-
 # Create a temp. dir.
-tmpDir=$(mktemp -d -t XXXX) # Works on both OSX and Linux; note: dir. name will have random extension on OSX (e.g., '.../XXXX.bJViLcM3') and none on Linux (e.g., '.../vXDA')
+tmpDir=$(mktemp -d -t XXXX) || die # Works on both macOS and Linux; note: dir. name will have random extension on macOS (e.g., '.../XXXX.bJViLcM3') and none on Linux (e.g., '.../vXDA')
 tmpPrefixDir="$tmpDir/n"
 
 # ----------- INSTALLATION
@@ -71,9 +69,9 @@ for i in {1..6}; do
       runInstall -y lts && ok=1
       nodeShouldInstall=1
       ;;
-    6) # unattended installation FROM GITHUB
-      descr='unattended: default FROM GITHUB (will not succeed if not yet pushed)'
-      N_PREFIX="$tmpPrefixDir" INSTALL_N_TEST_OVERRIDE_SHELL_INIT_FILE="$tmpDir/initFile" bash <(curl -L "${kTHIS_REPO_URL_LONG/\/\/github.com\////raw.githubusercontent.com/}/master/bin/n-install") -y - && ok=1
+    6) # unattended installation DIRECTLY FROM GITHUB - !! This may fail if the latest changes have not yet been pushed.
+      descr='unattended: default installation DIRECTLY FROM GITHUB (may fail if the latest changes have not yet been pushed)'
+      N_PREFIX="$tmpPrefixDir" N_INSTALL_TEST_OVERRIDE_SHELL_INIT_FILE="$tmpDir/initFile" bash <(curl -L "${kTHIS_REPO_URL_LONG/\/\/github.com\////raw.githubusercontent.com/}/master/bin/n-install") -y - && ok=1
       nodeShouldInstall=0
       ;;
     *)

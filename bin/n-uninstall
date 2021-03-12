@@ -158,12 +158,14 @@ cleanUpShellInitFile() {
   (( $# == 0 )) || return 2
 
   # Determine the shell-specific initialization file.
-  if [[ -n $INSTALL_N_TEST_OVERRIDE_SHELL_INIT_FILE ]]; then # override for testing
-      initFile=$INSTALL_N_TEST_OVERRIDE_SHELL_INIT_FILE
+  if [[ -n $N_INSTALL_TEST_OVERRIDE_SHELL_INIT_FILE ]]; then # override for testing
+      initFile=$N_INSTALL_TEST_OVERRIDE_SHELL_INIT_FILE
   else
+    # IMPORTANT:
+    #   This STATEMENT MUST BE KEPT IN SYNC with modifyShellInitFile() in n-install.
     case "$(basename -- "$SHELL")" in
       'bash')
-        # !! Sadly, bash ONLY reads ~/.bash_profile in LOGIN shells, and on OSX (Darwin) ALL shells are login shells, so on OSX we must target ~/.bash_profile.
+        # !! Sadly, bash ONLY reads ~/.bash_profile in LOGIN shells, and on macOS (Darwin) ALL shells are login shells, so on macOS we must target ~/.bash_profile.
         [[ $(uname) == 'Darwin' ]] && initFile=~/.bash_profile || initFile=~/.bashrc
         ;;
       'ksh')
@@ -171,6 +173,12 @@ cleanUpShellInitFile() {
         ;;
       'zsh')
         initFile=${ZDOTDIR:-~}/.zshrc
+        ;;
+      'fish')
+        initFile=${XDG_CONFIG_HOME:-~/.config}/fish/config.fish
+        ;;
+      'pwsh')
+        initFile=${XDG_CONFIG_HOME:-~/.config}/powershell/Microsoft.PowerShell_profile.ps1
         ;;
       *) 
         return $kEC_UNSUPPORTED_SHELL
@@ -187,17 +195,27 @@ cleanUpShellInitFile() {
 
   [[ -n $existingLine ]] || return $kEC_LINE_NOT_FOUND
 
-  # To avoid tricky parsing, we simply eval the line in a subshell and
-  # output the resulting N_PREFIX value; note that, hypothetically, this
-  # could break. We do use the same, Bash-compatible code in n-install
-  # for all supported shells, however.
-  # !! Using eval means that a *commented out* line will yield the EMPTY STRING,
-  # !! which is a case that we'll handle later in the calling code.
-  # !! The idea is that it's not safe to use the value from commented-out code.
-  (N_PREFIX=; eval "$existingLine" &>/dev/null; printf '%s\n' "$N_PREFIX")
+  # Determine the *value* of $N_PREFIX *as defined in the initialization file*:
+  # IMPORTANT: 
+  #   * We use SHELL-AGNOSTIC, REGEX-BASED PARSING that makes the following ASSUMPTIONS, WHICH MUST BE ENSURED BY THE modifyShellInitFile() function in `n-install`.
+  #      * TO KEEP THE REGEX SIMPLE, SHELL-SPECIFIC LINES MUST NOT CONTAIN EXTRA WHITESPACE IN THEIR N_PREFIX ASSIGNMENT COMMAND:
+  #        I.e.: `...N_EXPORT="..." (PowerShell, POSIX-compatible shells) and `set -x N_EXPORT "..."` (fish)
+  #      * SINCE *bash*'s `eval` must be used to expand the extracted value, given that it is likely *variable-based*:
+  #        * ONLY VARIABLE REFERENCES IN THE FORM `$FOO` ARE SUPPORTED - fortunately, even though PowerShell generally requires
+  #          the form $env:FOO for environment variables, it does have an built-in $HOME variable too.
+  #        * (The cumbersome and slow alternative would be to invoke the shell and let it echo the N_PREFIX value.)
+  #   * Also:
+  #      * We must avoid word-boundary expressions such as \b, \< and [[:\<:]], because they're not portable.
+  #      * If the line is COMMENTED OUT, to be safe we do NOT assume that the value is valid and handle that case later, in the caller.
+  (N_PREFIX=''; if [[ ! $existingLine =~ ^[[:blank:]]*'#' ]]; then [[ $existingLine =~ N_PREFIX[=\ ]\"([^\"]*) ]] && eval "printf %s \"${BASH_REMATCH[1]}\""; fi)
 
   # Remove the line from the init file.
   if (( ! testOnly )); then
+    # !! We do NOT use sed -i, because that is not safe, notably because it
+    # !! would destroy a symlink, if the target file happens to be one.
+    # !! Instead, we read the entire contents into memory, and rewrite
+    # !! the modified string using simply '>', which DOES preserve the
+    # !! existing inode and thus file attributes including symlink status.
     initFileContents=$(grep -Fv "$kINIT_FILE_LINE_ID" -- "$initFile") || die
     printf '%s\n' "$initFileContents" >"$initFile" || { echo "Aborting, because shell initialization file '$initFile' could not be updated." >&2; return 1; }
   fi

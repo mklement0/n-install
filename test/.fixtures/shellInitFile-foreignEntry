@@ -4,6 +4,6 @@
 
 # Added by God-knows-who
 export N_PREFIX
-:; N_PREFIX='/Users/jdoe/n'
+:; N_PREFIX="/Users/jdoe/n"
 
 # original last line

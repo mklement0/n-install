@@ -5,10 +5,11 @@
 $(if $(findstring /,$(MAKEFILE_LIST)),$(error Please only invoke this makefile from the directory it resides in))
 	# Run all shell commands with bash.
 SHELL := bash
-	# Add the local npm packages' bin folder to the PATH, so that `make` can find them even when invoked directly (not via npm).
+export N_PREFIX := 
+	# Add the following to the PATH:
 	# !! Note that this extended path only takes effect in (a) recipe commands that are (b) true shell commands (not optimized away) - when in doubt, simply append ';'
 	# !! To also use the extended path in $(shell ...) function calls, use $(shell PATH="$(PATH)" ...).
-export PATH := ./node_modules/.bin:$(PATH) # !! So as to make this work in PowerShell, use './' to start the path, NOT $(PWD)
+export PATH := ./node_modules/.bin:$(PATH) # !! So as to make this work in PowerShell too, use './' to start the path, NOT $(PWD)
 	# Sanity check: git repo must exist.
 $(if $(shell [[ -d .git ]] && echo ok),,$(error No git repo found in current dir. Please at least initialize one with 'git init'))
 	# Sanity check: make sure dev dependencies (and npm) are installed - skip this check only for certain generic targets (':' is the pseudo target used by the `list` target's recipe.)

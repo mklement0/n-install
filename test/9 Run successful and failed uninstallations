@@ -7,6 +7,8 @@
 #            of the script.
 # ---
 PATH=${PWD%%/test*}/bin:$PATH
+# Test override: Skip the check for an existing n / npm / node installation 
+export N_INSTALL_TEST_OVERRIDE_SKIP_EXISTING_INSTALLATION_TEST=1
 
 # Helper function for error reporting.
 die() { (( $# > 0 )) && echo "ERROR: $*" >&2; exit 1; }
@@ -15,12 +17,8 @@ dieNotFound() { echo "ERROR: $descr: not found or not executable in '$tmpDir': '
 
 runUninstall() {
   # Note the INSTALL_N_TEST_OVERRIDE_* override.
-  INSTALL_N_TEST_OVERRIDE_SHELL_INIT_FILE="$tmpInitFile" n-uninstall "$@"
+  N_INSTALL_TEST_OVERRIDE_SHELL_INIT_FILE="$tmpInitFile" n-uninstall "$@"
 }
-
-# !! Since n-install will categorically refuse to run with a `node` executable in the $PATH,
-# !! we must remove that executable's directory from the $PATH beforehand.
-PATH=$(./.fixtures/getNoNodePath)
 
 #### !! Must be kept in sync with master copies in 'n-install'.
 kINSTALLER_NAME='n-install' # The name of the script that installed n.
@@ -30,7 +28,7 @@ kINIT_FILE_LINE_ID=" # Added by $kINSTALLER_NAME (see $kTHIS_REPO_URL)." # The s
 #### 
 
 # Create a temp. dir.
-tmpDir=$(mktemp -d -t XXXX) # Works on both OSX and Linux; note: dir. name will have random extension on OSX (e.g., '.../XXXX.bJViLcM3') and none on Linux (e.g., '.../vXDA')
+tmpDir=$(mktemp -d -t XXXX) || die # Works on both macOS and Linux; note: dir. name will have random extension on macOS (e.g., '.../XXXX.bJViLcM3') and none on Linux (e.g., '.../vXDA')
 tmpPrefixDir="$tmpDir/n"
 tmpInitFile="$tmpDir/initFile"
 
@@ -53,7 +51,8 @@ for initFile in "${initFiles[@]}"; do
   case $i in
     1|2|3|4)
       # Patch the initialization file copy to point N_PREFIX to "$tmpPrefixDir", so that the uninstaller removes the latter.
-      sed "s#\(N_PREFIX=\)[^;]*;#\1'${tmpPrefixDir}';#" "$initFile" > "$tmpInitFile" 
+      # !! Use "..." quoting, because that's what n-install originally uses, and what n-uninstall expects when extracting the variable value.
+      sed "s#\(N_PREFIX=\)[^;]*;#\1\"${tmpPrefixDir}\";#" "$initFile" > "$tmpInitFile" 
       diff "$initFile" "$tmpInitFile" >/dev/null && die "TEST DESIGN: $descr: Patching '$tmpInitFile' failed unexpectedly."
       ;;
     *) # Nothing to patch by definition.
