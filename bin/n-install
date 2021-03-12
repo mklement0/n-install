@@ -37,7 +37,7 @@ kHELPER_SCRIPTS=(
   "$kUNINSTALL_SCRIPT"
 ) 
 mainOrStable='stable'
-[[ -n $N_INSTALL_TEST_OVERRIDE_SHELL_INIT_FILE ]] && mainOrStable='main' # override for testing: use the latest rather than the officially stable code.
+[[ -n $N_INSTALL_TEST_OVERRIDE_SHELL_INIT_FILE ]] && mainOrStable='master' # override for testing: use the latest rather than the officially stable code.
 kHELPER_SCRIPT_URLS=( 
   "${kTHIS_REPO_URL_LONG/\/\/github.com\////raw.githubusercontent.com/}/$mainOrStable/bin/$kUPDATE_SCRIPT" 
   "${kTHIS_REPO_URL_LONG/\/\/github.com\////raw.githubusercontent.com/}/$mainOrStable/bin/$kUNINSTALL_SCRIPT" 
