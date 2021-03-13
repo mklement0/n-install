@@ -318,7 +318,7 @@ getShellInitFileLine() {
     case "$(basename -- "$SHELL")" in
       'fish')
         cmd_setEnvVar="set -x N_PREFIX \"${N_PREFIX/#$HOME/\$HOME}\""
-        cmd_addToPath='contains $N_PREFIX $PATH; or set -a PATH $N_PREFIX'
+        cmd_addToPath='contains "$N_PREFIX/bin" $PATH; or set -a PATH "$N_PREFIX/bin"'
         ;;
       'pwsh') # PowerShell      
         cmd_setEnvVar="\$env:N_PREFIX=\"${N_PREFIX/#$HOME/\$HOME}\"" # !! Use `$HOME`, not `$env:HOME` - see above.
