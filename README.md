@@ -308,6 +308,9 @@ Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
 
+* **[v0.6.1](https://github.com/mklement0/n-install/compare/v0.6.0...v0.6.1)** (2021-03-12):
+  * [fix] `fish` initialization-file modification corrected.
+
 * **[v0.6.0](https://github.com/mklement0/n-install/compare/v0.5.1...v0.6.0)** (2021-03-12):
   * [enhancement] Added initialization-files support for `fish` and `pwsh` (PowerShell).
 
