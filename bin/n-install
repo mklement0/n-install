@@ -52,8 +52,8 @@ kHELPER_SCRIPT_URLS=(
   # !! DO NOT MODIFY THE *FORMAT* OF THIS ARRAY LITERAL - `util/update-checksums`
   # !! and a test rely on it.
 kSHA256_SUMS=(
-  "b190ca0f0ed4f05e4efeb4367d520f090cbbe774b18be4e6f0d53403bdb0d50e  $kUPDATE_SCRIPT"
-  "641ddae15559b7432eb219701a2affc20bce52dddb1536fccfe0a0ad8d08aacc  $kUNINSTALL_SCRIPT"
+  "ca4b9e6f54d144732f0a231f1119eeabee6f1ad3a22fe371ac2296fe8d51d9f0  $kUPDATE_SCRIPT"
+  "4bf8d3a1f95aed6ccfb74e0735aa853caafe49934a70d052fb660951829308fa  $kUNINSTALL_SCRIPT"
 )
 ##
 
@@ -491,7 +491,7 @@ unset CDPATH  # to prevent unpredictable `cd` behavior
 [[ -t 1 ]] || kNO_COLOR=1 # turn off colored output if stdout is not connected to a terminal
 
 # Output version number and exit, if requested. Note that the `ver='...'` statement is automatically updated by `make version VER=<newVer>` - DO keep the 'v' prefix in the variable _definition_.
-[[ $1 == '--version' ]] && { ver='v0.5.1'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://git.io/n-install-repo'; exit 0; }
+[[ $1 == '--version' ]] && { ver='v0.6.0'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://git.io/n-install-repo'; exit 0; }
 
 # !! AS OF n 1.3.0, n ITSELF ONLY WORKS WITH curl, NOT ALSO WITH wget.
 # !! Once n also supports wget, mention wget as an alternative in the help text.

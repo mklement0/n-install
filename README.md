@@ -45,12 +45,12 @@ This is by far **the simplest way to get started with both `n` and Node.js** - e
     * Environment variable `N_PREFIX` is defined to point to the installation directory.
     * Directory `$N_PREFIX/bin` is appended to the `$PATH`, unless already present.
     * For other shells, these modification must be performed manually; instructions are provided during installation.
-    * You can also explicitly suppress modification with the `-n` option.
-    * **Note**: If you want to override what shell's initialization file is updated, set the `SHELL` environment variable to that shell's file name (e.g., `fish`) before calling the instalation command.
+    * NoteL You can also suppress modification with the `-n` option.
+    * **Note**: If you want to override what shell's initialization file is updated, set the `SHELL` environment variable to that shell's file name (e.g., `fish`) before calling the installation command; e.g., from a POSIX-compatible shell: `SHELL=fish curl -L https://git.io/n-install | bash`
 * By default, the latest LTS Node.js version is installed; you can suppress that or even specify multiple Node.js versions to install.
 * Note that any preexisting `n`, Node.js installation must be removed before using this installation method.
 * All installation prerequisites are met by default on macOS and some Linux distros; notably, `git` and `curl` must be present - see [Installing n](#installing-n) for details.
-* After installation, **be sure to open a new terminal tab or window or reload your shell initialization file** before attempting to use `n` / Node.js - see 
+* After installation, **be sure to open a new terminal tab or window or reload your shell initialization file** before attempting to use `n` / Node.js.
   
 See examples [below](#examples), and [Installing n](#installing-n) for prerequisites and installation options.
 
@@ -307,6 +307,9 @@ This project gratefully depends on the following open-source components, accordi
 Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
+
+* **[v0.6.0](https://github.com/mklement0/n-install/compare/v0.5.1...v0.6.0)** (2021-03-12):
+  * [enhancement] Added initialization-files support for `fish` and `pwsh` (PowerShell).
 
 * **[v0.5.1](https://github.com/mklement0/n-install/compare/v0.5.0...v0.5.1)** (2020-01-10):
   * [fix] Fixes #28: support for a custom zsh initialization-file directory via environment variable `ZDOTDIR`.
