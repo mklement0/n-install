@@ -46,7 +46,7 @@ This is by far **the simplest way to get started with both `n` and Node.js** - e
     * Directory `$N_PREFIX/bin` is appended to the `$PATH`, unless already present.
     * For other shells, these modification must be performed manually; instructions are provided during installation.
     * NoteL You can also suppress modification with the `-n` option.
-    * **Note**: If you want to override what shell's initialization file is updated, set the `SHELL` environment variable to that shell's file name (e.g., `fish`) before calling the installation command; e.g., from a POSIX-compatible shell: `curl -L https://git.io/n-install | SHELL=fish bash`
+    * **Note**: If you want to override what shell's initialization file is updated, set the `SHELL` environment variable to that shell's file name (e.g., `fish`) before calling the installation command; e.g., from a POSIX-compatible shell: `curl -L https://git.io/n-install | SHELL=fish bash`; similarly, on uninstallation you'll have to use `SHELL=fish n-uninstall`
 * By default, the latest LTS Node.js version is installed; you can suppress that or even specify multiple Node.js versions to install.
 * Note that any preexisting `n`, Node.js installation must be removed before using this installation method.
 * All installation prerequisites are met by default on macOS and some Linux distros; notably, `git` and `curl` must be present - see [Installing n](#installing-n) for details.
