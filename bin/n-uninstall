@@ -162,7 +162,7 @@ cleanUpShellInitFile() {
       initFile=$N_INSTALL_TEST_OVERRIDE_SHELL_INIT_FILE
   else
     # IMPORTANT:
-    #   This STATEMENT MUST BE KEPT IN SYNC with modifyShellInitFile() in n-install.
+    #   This STATEMENT MUST BE KEPT IN SYNC with getShellInitFile() in n-install.
     case "$(basename -- "$SHELL")" in
       'bash')
         # !! Sadly, bash ONLY reads ~/.bash_profile in LOGIN shells, and on macOS (Darwin) ALL shells are login shells, so on macOS we must target ~/.bash_profile.

@@ -46,9 +46,10 @@ This is by far **the simplest way to get started with both `n` and Node.js** - e
     * Directory `$N_PREFIX/bin` is appended to the `$PATH`, unless already present.
     * For other shells, these modification must be performed manually; instructions are provided during installation.
     * You can also explicitly suppress modification with the `-n` option.
+    * **Note**: If you want to override what shell's initialization file is updated, set the `SHELL` environment variable to that shell's file name (e.g., `fish`) before calling the instalation command.
 * By default, the latest LTS Node.js version is installed; you can suppress that or even specify multiple Node.js versions to install.
 * Note that any preexisting `n`, Node.js installation must be removed before using this installation method.
-* All installation prerequisites are met by default on OSX and some Linux distros; notably, `git` and `curl` must be present - see [Installing n](#installing-n) for details.
+* All installation prerequisites are met by default on macOS and some Linux distros; notably, `git` and `curl` must be present - see [Installing n](#installing-n) for details.
 * After installation, **be sure to open a new terminal tab or window or reload your shell initialization file** before attempting to use `n` / Node.js - see 
   
 See examples [below](#examples), and [Installing n](#installing-n) for prerequisites and installation options.
@@ -120,7 +121,7 @@ curl -L https://git.io/n-install | [N_PREFIX=<dir>] bash [-s -- [-y] [<version>.
 See below for an explanation of the options; `-s --` is required by Bash itself in order to pass options through to the script piped from stdin.
 
 **Before you can use `n` and any installed Node.js versions**, you must **open a new terminal tab/window _or_ reload your shell initialization file**.  
-For instance, if your shell is Bash and you're on **Linux**, you'd use **`. ~/.bashrc`**; on **OSX**, you'd use **`. ~/.bash_profile`**;
+For instance, if your shell is Bash and you're on **Linux**, you'd use **`. ~/.bashrc`**; on **macOS**, you'd use **`. ~/.bash_profile`**;
 the installer will tell you the specific file to reload on successful installation.  
 
 _Caveat_: If you **reload the initialization file from a _script_** (rather than interactively) - so that you can make use of `n` or Node.js in the remainder of the script, e.g.,

@@ -36,11 +36,11 @@ kHELPER_SCRIPTS=(
   "$kUPDATE_SCRIPT"
   "$kUNINSTALL_SCRIPT"
 ) 
-mainOrStable='stable'
-[[ -n $N_INSTALL_TEST_OVERRIDE_SHELL_INIT_FILE ]] && mainOrStable='master' # override for testing: use the latest rather than the officially stable code.
+latestOrStable='stable'
+[[ -n $N_INSTALL_TEST_OVERRIDE_SHELL_INIT_FILE ]] && latestOrStable='master' # override for testing: use the latest code from the 'master' branch rather than the officially stable code from the 'stable' label.
 kHELPER_SCRIPT_URLS=( 
-  "${kTHIS_REPO_URL_LONG/\/\/github.com\////raw.githubusercontent.com/}/$mainOrStable/bin/$kUPDATE_SCRIPT" 
-  "${kTHIS_REPO_URL_LONG/\/\/github.com\////raw.githubusercontent.com/}/$mainOrStable/bin/$kUNINSTALL_SCRIPT" 
+  "${kTHIS_REPO_URL_LONG/\/\/github.com\////raw.githubusercontent.com/}/$latestOrStable/bin/$kUPDATE_SCRIPT" 
+  "${kTHIS_REPO_URL_LONG/\/\/github.com\////raw.githubusercontent.com/}/$latestOrStable/bin/$kUNINSTALL_SCRIPT" 
 )
   # SHA-256 checksum for the helper scripts.
   # !! These checksums must be updated whenever `n-update` and `n-uninstall`
@@ -259,11 +259,45 @@ clearDir() ( # execute in subshell to localize effect of shopt
   rm -rf "${itms[@]}"
 )
 
+# SYNOPSIS
+#   getShellInitFile
+# DESCRIPTION
+#   Returns the full path of the initalization file of the shell identified
+#   via (environment variable) $SHELL, the user's default shell.
+#   If $SHELL refers to an *unsupported* shell, the empty string is returned.
+getShellInitFile() {
+  local initFile=''
+
+  # IMPORTANT:
+  #   This STATEMENT MUST BE KEPT IN SYNC with cleanUpShellInitFile() in n-uninstall.
+  case "$(basename -- "$SHELL")" in
+    'bash')
+      # !! Sadly, bash ONLY reads ~/.bash_profile in LOGIN shells, and on macOS (Darwin) ALL shells are login shells, so on macOS we must target ~/.bash_profile.
+      [[ $(uname) == 'Darwin' ]] && initFile=~/.bash_profile || initFile=~/.bashrc
+      ;;
+    'ksh')
+      initFile=~/.kshrc
+      ;;
+    'zsh')
+      initFile=${ZDOTDIR:-~}/.zshrc
+      ;;
+    'fish')
+      initFile=${XDG_CONFIG_HOME:-~/.config}/fish/config.fish
+      ;;
+    'pwsh') # PowerShell
+      initFile=${XDG_CONFIG_HOME:-~/.config}/powershell/Microsoft.PowerShell_profile.ps1
+      ;;
+  esac
+
+  printf %s "$initFile"
+
+}
+
 # Print the line that a shell initialization file must contain for `n` (and 
 # `n-update` and `n-uninstall`) to work correctly.
 getShellInitFileLine() {
 
-    local userDefaultShell="$1" cmd_setEnvVar cmd_addToPath
+    local cmd_setEnvVar cmd_addToPath
 
     # Synthesize the - single - line to add to the init file.
     # Definition of the N_PREFIX environment variable plus ensuring that
@@ -281,7 +315,7 @@ getShellInitFileLine() {
     #     * Use NO WITHESPACE AROUND "=" in `...N_PREFIX="..."...` and EXACTLY ONE SPACE in `...NPREFIX "..."`
     #     * Use ONLY VARIABLE REFERENCES IN THE FORM `$FOO` - fortunately, even though PowerShell generally requires
     #       the form $env:FOO for environment variables, it does have a built-in $HOME variable too.
-    case $userDefaultShell in
+    case "$(basename -- "$SHELL")" in
       'fish')
         cmd_setEnvVar="set -x N_PREFIX \"${N_PREFIX/#$HOME/\$HOME}\""
         cmd_addToPath='contains $N_PREFIX $PATH; or set -a PATH $N_PREFIX'
@@ -312,39 +346,17 @@ getShellInitFileLine() {
 #  Outputs the full path of the initialization file modified.
 modifyShellInitFile() {
 
-  local line initFile existingLine initFileContents userDefaultShell
+  local line initFile existingLine initFileContents
 
-  userDefaultShell="$(basename -- "$SHELL")"
-  [[ -z $userDefaultShell ]] && userDefaultShell='sh'
-
-  # Get the line to add to the init file.
-  line=$(getShellInitFileLine $userDefaultShell)
+  # Get the path to the init file as well as the line to add to it.
+  initFile="$(getShellInitFile)"
+  line="$(getShellInitFileLine)"
 
   # Determine the shell-specific initialization file.
   if [[ -n $N_INSTALL_TEST_OVERRIDE_SHELL_INIT_FILE ]]; then # override for testing
       initFile=$N_INSTALL_TEST_OVERRIDE_SHELL_INIT_FILE
-  else
-    # IMPORTANT:
-    #   This STATEMENT MUST BE KEPT IN SYNC with cleanUpShellInitFile() in n-uninstall.
-    case $userDefaultShell in
-      'bash')
-        # !! Sadly, bash ONLY reads ~/.bash_profile in LOGIN shells, and on macOS (Darwin) ALL shells are login shells, so on macOS we must target ~/.bash_profile.
-        [[ $(uname) == 'Darwin' ]] && initFile=~/.bash_profile || initFile=~/.bashrc
-        ;;
-      'ksh')
-        initFile=~/.kshrc
-        ;;
-      'zsh')
-        initFile=${ZDOTDIR:-~}/.zshrc
-        ;;
-      'fish')
-        initFile=${XDG_CONFIG_HOME:-~/.config}/fish/config.fish
-        ;;
-      'pwsh') # PowerShell
-        initFile=${XDG_CONFIG_HOME:-~/.config}/powershell/Microsoft.PowerShell_profile.ps1
-        ;;
-      *) 
-        warn - <<EOF
+  elif [[ -z $initFile ]]; then
+    warn - <<EOF
 Automatic modification of the initialization file for shell
 $SHELL is not supported.
 For n and the Node.js versions managed by it to work correctly,
@@ -353,9 +365,7 @@ INITIALIZATION FILE:
 
 $line
 EOF
-        return 0
-        ;;
-    esac
+    return 0
   fi
 
   # To be safe: create the directory for the initialization file on demand.
@@ -692,14 +702,13 @@ if [[ $N_INSTALL_TEST_OVERRIDE_SKIP_EXISTING_INSTALLATION_TEST != '1' ]]; then #
   if (( ${#existingExes[@]} > 0 )); then
 
     die - 3 <<EOF
-  Aborting, because n and/or Node.js-related binaries are already
-  in the \$PATH:
-          
-  $(printf '       %s\n' "${existingExes[@]}")
+  Aborting, because n and/or Node.js-related binaries are already in your \$PATH:
 
-  Please remove any existing n, Node.js installation, then try 
+$(printf '       %s\n' "${existingExes[@]}")
+
+  Please remove any existing n and/or Node.js installation, then try 
   again.
-  $([[ -n $(command -v n) ]] && printf %s "If you previously installed n via $kTHIS_REPO_URL,"$'\n'"run \`$kUNINSTALL_SCRIPT\` to uninstall.")
+  $([[ -n $(command -v n) ]] && printf %s "If you previously installed n via $kTHIS_REPO_URL,"$'\n'"  run \`$kUNINSTALL_SCRIPT\` to uninstall.")
 EOF
 
   fi
@@ -750,29 +759,49 @@ fi
 
 if (( ! (skipPrompts || quiet) )); then
 
+  userDefaultShell="$(basename -- $SHELL)"
+  initFile="$(getShellInitFile)"
+  [[ -n $initFile ]] && shellIsSupported=1 || shellIsSupported=0
+
   cat <<EOF
 ===
 You are ABOUT TO INSTALL n, the Node.js VERSION MANAGER, in:
 
   $(green $N_PREFIX)
-$( (( ${#versionsToInstall[@]} > 0 )) && cat <<EOF2 # !! the last line before 'EOF2' contains a single space to ensure that it isn't trimmed by the command subst.
 
-Afterward, THE FOLLOWING Node.js VERSION(S) WILL BE INSTALLED,
+Afterwards, THE FOLLOWING Node.js VERSION(S) WILL BE INSTALLED,
 and the first one listed will be made active; 
   'lts' refers to the LTS (long-term support) version, 
   'latest' to the latest available version.
-  '-' means that no versions will be installed:
+  '-' means that *no* version will be installed:
 
-  $(green "${versionsToInstall[*]}")
+  $( (( ${#versionsToInstall[@]} > 0 )) && green "${versionsToInstall[*]}" || yellow NOTE: Skipping Node.js installation, as requested.)
  
-EOF2
-)
 If your shell is bash, bsh, zsh, fish, or pwsh (PowerShell), the relevant 
 initialization file will be modified in order to:
  - export environment variable \$N_PREFIX.
  - ensure that \$N_PREFIX/bin is in the \$PATH
-For any other shell you'll have to make these modifications yourself (details
-to follow).
+
+$(
+  if (( skipInitFileUpdate )); then
+    echo "  $(yellow NOTE: Skipping initialization-file update, as requested.)"
+  elif (( shellIsSupported )); then
+  cat <<EOF4
+$(green Your shell, $userDefaultShell, IS supported), and the following initialization
+file will be updated:
+
+   $initFile
+EOF4
+
+else
+
+  cat <<EOF5
+$(red Your shell, $userDefaultShell, is NOT supported for automatic initialization-file modification.)
+You will have to make these modifications yourself - details to follow.
+EOF5
+
+fi
+)
 
 For more information, see $kTHIS_REPO_URL
 ===
