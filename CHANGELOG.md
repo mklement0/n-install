@@ -4,6 +4,9 @@ Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
 
+* **[v0.6.3](https://github.com/mklement0/n-install/compare/v0.6.2...v0.6.3)** (2022-04-26):
+  * [fix] Restored old shell-initialization file ID string, so as not to break existing installations.
+
 * **[v0.6.2](https://github.com/mklement0/n-install/compare/v0.6.1...v0.6.2)** (2022-04-26):
   * [fix] Short URL domain names updated to `bit.ly`, given that `git.io` is being retired (thanks, @SukkaW).
 

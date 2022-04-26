@@ -17,9 +17,13 @@ kTHIS_REPO_URL='https://bit.ly/n-install-repo' # This script's source repository
 kTHIS_REPO_URL_LONG='https://github.com/mklement0/n-install' # This script's source repository in LONG form - needed for deriving raw.githubusercontent.com URLs from it.
 kPREFIX_DIR=${N_PREFIX:-$HOME/n} # The target prefix directory, inside which both a dir. for n itself and the active node version's dirs. will be located.
 ## For updating the relevant shell initialization file: The string that identifies the line added by us.
-## !! Now that this project has been published, we HARD-CODE this ID string to ensure that old installations are found.
-## !! For instance, we've changed from http:// to https:// URLs later, but the ID string must continue to use http:// to avoid breaking later uninstalls / reinstalls. 
-kINIT_FILE_LINE_ID=" # Added by n-install (see http://bit.ly/n-install-repo)."
+## !! IMPORTANT:
+## !!   Now that this project has been published, we HARD-CODE this ID string to ensure that old installations are found.
+## !!   Notably, we've changed from:
+## !!     http:// to https:// URLs later
+## !!     http://git.io/n-install-repo to https://bit.ly/n-install-repo after retirment of git.io
+## !!   but the ID STRING MUST CONTINUE TO USE "http://git.io/n-install-repo" to avoid breaking later uninstalls / reinstalls. 
+kINIT_FILE_LINE_ID=" # Added by n-install (see http://git.io/n-install-repo)."
 kREGEX_CONFLICTING_LINE='^[^#]*\bN_PREFIX=' # Regex that identifies relevant existing lines.
 ##### 
 
@@ -52,8 +56,8 @@ kHELPER_SCRIPT_URLS=(
   # !! DO NOT MODIFY THE *FORMAT* OF THIS ARRAY LITERAL - `util/update-checksums`
   # !! and a test rely on it.
 kSHA256_SUMS=(
-  "1249cf9e3e6f28cd2785c33fdfdc28e960a38266a7f571e89869bbcbafaf7c82  $kUPDATE_SCRIPT"
-  "4e49eddb72f15b27d92424f4906e7b2ccdddf6ad7a09205e4cc7eb246dc697ee  $kUNINSTALL_SCRIPT"
+  "0741efcc06bb5e4754167206e17534ddac0f2a62e18e3f1f8c8a25ba45080ac1  $kUPDATE_SCRIPT"
+  "73a44d510c828f71fe8454e78bd6ed78ada0e01dfe975b4a883bbd437e293e1c  $kUNINSTALL_SCRIPT"
 )
 ##
 
@@ -304,11 +308,11 @@ getShellInitFileLine() {
     # $N_PREFIX/bin is in the $PATH, followed by the identifying comment.
     # E.g.:
     #   POSIX-compatible shells:
-    #      export N_PREFIX="$HOME/n"; [[ :$PATH: == *":$N_PREFIX/bin:"* ]] || PATH+=":$N_PREFIX/bin"  # Added by n-install (see http://bit.ly/n-install-repo).
+    #      export N_PREFIX="$HOME/n"; [[ :$PATH: == *":$N_PREFIX/bin:"* ]] || PATH+=":$N_PREFIX/bin"  # Added by n-install (see http://git.io/n-install-repo).
     #   fish:
-    #      set -x N_PREFIX "$HOME/n"; contains $N_PREFIX $PATH; or set -a PATH $N_PREFIX # Added by n-install (see http://bit.ly/n-install-repo).
+    #      set -x N_PREFIX "$HOME/n"; contains $N_PREFIX $PATH; or set -a PATH $N_PREFIX # Added by n-install (see http://git.io/n-install-repo).
     #   pwsh (PowerShell):
-    #      $env:N_PREFIX="$HOME/n"; if ($env:PATH -split ":" -notcontains "$env:N_PREFIX/bin") { $env:PATH += ":$env:N_PREFIX/bin" } # Added by n-install (see http://bit.ly/n-install-repo).
+    #      $env:N_PREFIX="$HOME/n"; if ($env:PATH -split ":" -notcontains "$env:N_PREFIX/bin") { $env:PATH += ":$env:N_PREFIX/bin" } # Added by n-install (see http://git.io/n-install-repo).
 
     # IMPORTANT:
     #   To facilitate language-neutral, regex-based extracton of the $N_PREFIX value in in `n-uninstall`:
@@ -491,7 +495,7 @@ unset CDPATH  # to prevent unpredictable `cd` behavior
 [[ -t 1 ]] || kNO_COLOR=1 # turn off colored output if stdout is not connected to a terminal
 
 # Output version number and exit, if requested. Note that the `ver='...'` statement is automatically updated by `make version VER=<newVer>` - DO keep the 'v' prefix in the variable _definition_.
-[[ $1 == '--version' ]] && { ver='v0.6.2'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://bit.ly/n-install-repo'; exit 0; }
+[[ $1 == '--version' ]] && { ver='v0.6.3'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://bit.ly/n-install-repo'; exit 0; }
 
 # !! AS OF n 1.3.0, n ITSELF ONLY WORKS WITH curl, NOT ALSO WITH wget.
 # !! Once n also supports wget, mention wget as an alternative in the help text.
