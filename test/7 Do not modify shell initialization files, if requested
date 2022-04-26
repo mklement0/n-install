@@ -31,7 +31,7 @@ cleanUp() {
 
 #### !! Must be kept in sync with master copies in 'n-install'.
 kINSTALLER_NAME='n-install' # The name of the script that installed n.
-kTHIS_REPO_URL='http://git.io/n-install-repo' # This script's source repository.
+kTHIS_REPO_URL='http://bit.ly/n-install-repo' # This script's source repository.
 kINIT_FILE_LINE_ID=" # Added by $kINSTALLER_NAME (see $kTHIS_REPO_URL)." # The string that identifies the line added by us.
 #### 
 
