@@ -30,8 +30,6 @@ cleanUp() {
 }
 
 #### !! Must be kept in sync with master copies in 'n-install'.
-kINSTALLER_NAME='n-install' # The name of the script that installed n.
-kTHIS_REPO_URL='https://bit.ly/n-install-repo' # This script's source repository.
 kINIT_FILE_LINE_ID=" # Added by n-install (see http://git.io/n-install-repo)." # !! SIC - see comments in n-install
 #### 
 
