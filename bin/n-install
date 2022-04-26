@@ -12,14 +12,14 @@ kMIN_BASH_VERSION='3.2'  # due to use of =~, we require at least 3.2
 
 ##### IMPORTANT: These names must, at least in part, be kept in sync with their counterparts in 'n-update' and 'n-uninstall'.
 kINSTALLER_NAME=n-install  # This script's name; note that since we'll typically be running via curl directly from GitHub, using $(basename "$BASH_SOURCE") to determine the name is not an option.
-#  Note: The actual *installation* URL is http://git.io/n-install which redirects to https://raw.githubusercontent.com/mklement0/n-install/stable/bin/n-install
-kTHIS_REPO_URL='https://git.io/n-install-repo' # This script's source repository - SHORT, git.io-based form.
+#  Note: The actual *installation* URL is https://git.io/n-install which redirects to https://raw.githubusercontent.com/mklement0/n-install/stable/bin/n-install
+kTHIS_REPO_URL='https://github.com/mklement0/n-install' # This script's source repository - SHORT, git.io-based form.
 kTHIS_REPO_URL_LONG='https://github.com/mklement0/n-install' # This script's source repository in LONG form - needed for deriving raw.githubusercontent.com URLs from it.
 kPREFIX_DIR=${N_PREFIX:-$HOME/n} # The target prefix directory, inside which both a dir. for n itself and the active node version's dirs. will be located.
 ## For updating the relevant shell initialization file: The string that identifies the line added by us.
 ## !! Now that this project has been published, we HARD-CODE this ID string to ensure that old installations are found.
 ## !! For instance, we've changed from http:// to https:// URLs later, but the ID string must continue to use http:// to avoid breaking later uninstalls / reinstalls. 
-kINIT_FILE_LINE_ID=" # Added by n-install (see http://git.io/n-install-repo)."
+kINIT_FILE_LINE_ID=" # Added by n-install (see https://github.com/mklement0/n-install)."
 kREGEX_CONFLICTING_LINE='^[^#]*\bN_PREFIX=' # Regex that identifies relevant existing lines.
 ##### 
 
@@ -52,8 +52,8 @@ kHELPER_SCRIPT_URLS=(
   # !! DO NOT MODIFY THE *FORMAT* OF THIS ARRAY LITERAL - `util/update-checksums`
   # !! and a test rely on it.
 kSHA256_SUMS=(
-  "6fbb9163e08476fe1e3960418a70aece30c6a92de17558f58ea99a24815deb1c  $kUPDATE_SCRIPT"
-  "2a2c4bd2a79bf9510b4472bc0d3d7534e2e808d971565dda694d4ac3c63a92ac  $kUNINSTALL_SCRIPT"
+  "e17b37f2f2025507d792a5ef7c8f06ffe4c53cd02e581baa1bf3c5c14a0c9a0a  $kUPDATE_SCRIPT"
+  "7dc18714039b038f6fcd0b2e6ca432c3c563e521aefcc3e9f4569e93709dd9ab  $kUNINSTALL_SCRIPT"
 )
 ##
 
@@ -304,11 +304,11 @@ getShellInitFileLine() {
     # $N_PREFIX/bin is in the $PATH, followed by the identifying comment.
     # E.g.:
     #   POSIX-compatible shells:
-    #      export N_PREFIX="$HOME/n"; [[ :$PATH: == *":$N_PREFIX/bin:"* ]] || PATH+=":$N_PREFIX/bin"  # Added by n-install (see http://git.io/n-install-repo).
+    #      export N_PREFIX="$HOME/n"; [[ :$PATH: == *":$N_PREFIX/bin:"* ]] || PATH+=":$N_PREFIX/bin"  # Added by n-install (see https://github.com/mklement0/n-install).
     #   fish:
-    #      set -x N_PREFIX "$HOME/n"; contains $N_PREFIX $PATH; or set -a PATH $N_PREFIX # Added by n-install (see http://git.io/n-install-repo).
+    #      set -x N_PREFIX "$HOME/n"; contains $N_PREFIX $PATH; or set -a PATH $N_PREFIX # Added by n-install (see https://github.com/mklement0/n-install).
     #   pwsh (PowerShell):
-    #      $env:N_PREFIX="$HOME/n"; if ($env:PATH -split ":" -notcontains "$env:N_PREFIX/bin") { $env:PATH += ":$env:N_PREFIX/bin" } # Added by n-install (see http://git.io/n-install-repo).
+    #      $env:N_PREFIX="$HOME/n"; if ($env:PATH -split ":" -notcontains "$env:N_PREFIX/bin") { $env:PATH += ":$env:N_PREFIX/bin" } # Added by n-install (see https://github.com/mklement0/n-install).
 
     # IMPORTANT:
     #   To facilitate language-neutral, regex-based extracton of the $N_PREFIX value in in `n-uninstall`:
@@ -491,7 +491,7 @@ unset CDPATH  # to prevent unpredictable `cd` behavior
 [[ -t 1 ]] || kNO_COLOR=1 # turn off colored output if stdout is not connected to a terminal
 
 # Output version number and exit, if requested. Note that the `ver='...'` statement is automatically updated by `make version VER=<newVer>` - DO keep the 'v' prefix in the variable _definition_.
-[[ $1 == '--version' ]] && { ver='v0.6.1'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://git.io/n-install-repo'; exit 0; }
+[[ $1 == '--version' ]] && { ver='v0.6.1'; echo "$kTHIS_NAME ${ver#v}"$'\nFor license information and more, visit https://github.com/mklement0/n-install'; exit 0; }
 
 # !! AS OF n 1.3.0, n ITSELF ONLY WORKS WITH curl, NOT ALSO WITH wget.
 # !! Once n also supports wget, mention wget as an alternative in the help text.

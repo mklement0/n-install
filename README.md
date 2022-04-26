@@ -30,7 +30,7 @@ Additionally, installs scripts `n-update` for later on-demand updating of `n`, a
 The simplest case is **installation of `n` with confirmation prompt**, with subsequent **installation of the latest LTS Node.js version**:
 
 ```shell
-curl -L https://git.io/n-install | bash
+curl -L https://raw.githubusercontent.com/mklement0/n-install/stable/bin/n-install | bash
 ```
 
 This is by far **the simplest way to get started with both `n` and Node.js** - even if you're looking to install only the latest LTS (long-term support) Node.js version, with no (immediate) plans to install _multiple_ versions.
@@ -46,7 +46,7 @@ This is by far **the simplest way to get started with both `n` and Node.js** - e
     * Directory `$N_PREFIX/bin` is appended to the `$PATH`, unless already present.
     * For other shells, these modification must be performed manually; instructions are provided during installation.
     * NoteL You can also suppress modification with the `-n` option.
-    * **Note**: If you want to override what shell's initialization file is updated, set the `SHELL` environment variable to that shell's file name (e.g., `fish`) before calling the installation command; e.g., from a POSIX-compatible shell: `curl -L https://git.io/n-install | SHELL=fish bash`; similarly, on uninstallation you'll have to use `SHELL=fish n-uninstall`
+    * **Note**: If you want to override what shell's initialization file is updated, set the `SHELL` environment variable to that shell's file name (e.g., `fish`) before calling the installation command; e.g., from a POSIX-compatible shell: `curl -L https://raw.githubusercontent.com/mklement0/n-install/stable/bin/n-install | SHELL=fish bash`; similarly, on uninstallation you'll have to use `SHELL=fish n-uninstall`
 * By default, the latest LTS Node.js version is installed; you can suppress that or even specify multiple Node.js versions to install.
 * Note that any preexisting `n`, Node.js installation must be removed before using this installation method.
 * All installation prerequisites are met by default on macOS and some Linux distros; notably, `git` and `curl` must be present - see [Installing n](#installing-n) for details.
@@ -65,33 +65,33 @@ Note: The examples use only `curl` for brevity; to run a given command with `wge
 * Installation with confirmation prompt to default location `$HOME/n` and installation of the latest LTS Node.js version:
 
 ```shell
-curl -L https://git.io/n-install | bash
+curl -L https://raw.githubusercontent.com/mklement0/n-install/stable/bin/n-install | bash
 ```
 
 * Automated installation to default location `$HOME/n` and installation of the latest LTS Node.js version:
 
 ```shell
-curl -L https://git.io/n-install | bash -s -- -y
+curl -L https://raw.githubusercontent.com/mklement0/n-install/stable/bin/n-install | bash -s -- -y
 ```
 
 * Automated, _quiet_ installation to default location `$HOME/n` and installation of the latest LTS Node.js version; _no status information_
 is displayed:
 
 ```shell
-curl -sL https://git.io/n-install | bash -s -- -q
+curl -sL https://raw.githubusercontent.com/mklement0/n-install/stable/bin/n-install | bash -s -- -q
 ```
 
 * Automated installation to the default location, with subsequent installation of the latest LTS
   (Long Term Support) version, and the latest 0.10.x release:
 
 ```shell
-curl -L https://git.io/n-install | bash -s -- -y lts 0.10
+curl -L https://raw.githubusercontent.com/mklement0/n-install/stable/bin/n-install | bash -s -- -y lts 0.10
 ```
 
 * Automated installation to custom location `~/util/n`, with subsequent installation of the latest LTS Node.js version:
 
 ```shell
-curl -L https://git.io/n-install | N_PREFIX=~/util/n bash -s -- -y
+curl -L https://raw.githubusercontent.com/mklement0/n-install/stable/bin/n-install | N_PREFIX=~/util/n bash -s -- -y
 ```
 
 # Installing n
@@ -115,7 +115,7 @@ For other shells, manual updating of the relevant initialization file is require
 ## Installation from GitHub
 
 ```shell
-curl -L https://git.io/n-install | [N_PREFIX=<dir>] bash [-s -- [-y] [<version>...]]
+curl -L https://raw.githubusercontent.com/mklement0/n-install/stable/bin/n-install | [N_PREFIX=<dir>] bash [-s -- [-y] [<version>...]]
 ```
 
 See below for an explanation of the options; `-s --` is required by Bash itself in order to pass options through to the script piped from stdin.
@@ -143,7 +143,7 @@ To bypass that:
 
 ## Manual installation
 
-* Download [this `bash` script](https://git.io/n-install) as `n-install`.
+* Download [this `bash` script](https://raw.githubusercontent.com/mklement0/n-install/stable/bin/n-install) as `n-install`.
 * Make it executable with `chmod +x`.
 * Move or symlink it to a directory in your `$PATH`.
 * Invoke `n-install` as detailed below.
@@ -228,7 +228,7 @@ DESCRIPTION
     This overrides the default behavior of auto-selecting binaries that match
     the current system.
 
-  For more information, see https://git.io/n-install-repo
+  For more information, see https://github.com/mklement0/n-install
 
 PREREQUISITES
   bash ... to run this script and n itself.

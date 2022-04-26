@@ -33,7 +33,7 @@ runUpdate() {
 kTHIS_REPO_URL_LONG='https://github.com/mklement0/n-install' # This script's source repository in LONG form - needed for deriving raw.githubusercontent.com URLs from it.
 #### 
 # Derive the URL and use the *master* branch (not the 'stable' label), so as to use the most recent code in prepraration for a new release.
-# !! By contrast, https://git.io/n-install points to https://raw.githubusercontent.com/mklement0/n-install/stable/bin/n-install i.e. the *stable* label.
+# !! By contrast, https://git.io/n-install points to  i.e. the *stable* label.
 url="${kTHIS_REPO_URL_LONG/\/\/github.com\////raw.githubusercontent.com/}/master/bin/n-install"
 
 # ----------- INSTALLATION
