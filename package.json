@@ -42,7 +42,7 @@
   "devDependencies": {
     "doctoc": "^2.2.1",
     "json": "^10.0.0",
-    "replace": "^1.2.0",
+    "replace": "^1.2.2",
     "semver": "^4.2.0",
     "tap": "^14.11.0",
     "urchin": "^0.0.5"
