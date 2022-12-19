@@ -310,7 +310,7 @@ getShellInitFileLine() {
     #   POSIX-compatible shells:
     #      export N_PREFIX="$HOME/n"; [[ :$PATH: == *":$N_PREFIX/bin:"* ]] || PATH+=":$N_PREFIX/bin"  # Added by n-install (see http://git.io/n-install-repo).
     #   fish:
-    #      set -x N_PREFIX "$HOME/n"; contains $N_PREFIX $PATH; or set -a PATH $N_PREFIX # Added by n-install (see http://git.io/n-install-repo).
+    #      set -x N_PREFIX "$HOME/n"; contains "$N_PREFIX/bin" $PATH; or set -a PATH $N_PREFIX # Added by n-install (see http://git.io/n-install-repo).
     #   pwsh (PowerShell):
     #      $env:N_PREFIX="$HOME/n"; if ($env:PATH -split ":" -notcontains "$env:N_PREFIX/bin") { $env:PATH += ":$env:N_PREFIX/bin" } # Added by n-install (see http://git.io/n-install-repo).
 
