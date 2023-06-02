@@ -33,6 +33,8 @@ The simplest case is **installation of `n` with confirmation prompt**, with subs
 curl -L https://bit.ly/n-install | bash
 ```
 
+<sup>Note: The bit.ly URL resolves to <code>https://raw.githubusercontent.com/mklement0/n-install/stable/bin/n-install</code>, i.e. a Bash script in this repository.</sup>
+
 This is by far **the simplest way to get started with both `n` and Node.js** - even if you're looking to install only the latest LTS (long-term support) Node.js version, with no (immediate) plans to install _multiple_ versions.
 
 `n` is installed as follows:
