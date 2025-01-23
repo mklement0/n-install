@@ -887,9 +887,9 @@ if (( ! helpersCopiedLocally )); then  # Running from GitHub with `curl ... | ba
 
   # Find a SHA-256 checksum utility and construct a verification command.
   shaSumVerifyCmd=
-  [[ -n $(command -v sha256sum) ]] && shaSumVerifyCmd=( 'sha256sum' '-c' '--status' ) # Linux
-  [[ -z $shaSumVerifyCmd && -n $(command -v shasum) ]] && shaSumVerifyCmd=( 'shasum' '-a' '256' '-c' '--status' ) # macOS
-
+  [[ $(uname) == 'Darwin' ]] && shaSumVerifyCmd=( '/usr/bin/shasum' '-a' '256' '-c' '--status' ) # macOS
+  [[ -z $shaSumVerifyCmd && -n $(command -v sha256sum) ]] && shaSumVerifyCmd=( 'sha256sum' '-c' '--status' ) # Linux
+  
   # Download helper scripts from GitHub.
   if [[ -z $shaSumVerifyCmd ]]; then # No SHA checksum-verification utility found - this should not happen.
 
