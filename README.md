@@ -298,9 +298,9 @@ This project gratefully depends on the following open-source components, accordi
 * [doctoc (D)]()
 * [json (D)]()
 * [replace (D)]()
-* [semver (D)](https://github.com/npm/node-semver#readme)
+* [semver (D)]()
 * [tap (D)](http://www.node-tap.org/)
-* [urchin (D)](https://git.sdf.org/tlevine/urchin#user-content-install)
+* [urchin (D)]()
 
 <!-- DO NOT EDIT THE NEXT CHAPTER and RETAIN THIS COMMENT: The next chapter is updated by `make update-readme/release` with the contents of 'CHANGELOG.md'. ALSO, LEAVE AT LEAST 1 BLANK LINE AFTER THIS COMMENT. -->
 
@@ -309,6 +309,9 @@ This project gratefully depends on the following open-source components, accordi
 Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
+
+* **[v0.6.4](https://github.com/mklement0/n-install/compare/v0.6.3...v0.6.4)** (2025-01-23):
+  * [fix] SHA-256 checksum-utility command-line construction code updated for new macOS version.
 
 * **[v0.6.3](https://github.com/mklement0/n-install/compare/v0.6.2...v0.6.3)** (2022-04-26):
   * [fix] Restored old shell-initialization file ID string, so as not to break existing installations.

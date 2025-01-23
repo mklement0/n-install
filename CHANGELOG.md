@@ -4,6 +4,9 @@ Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
 
+* **[v0.6.4](https://github.com/mklement0/n-install/compare/v0.6.3...v0.6.4)** (2025-01-23):
+  * [fix] SHA-256 checksum-utility command-line construction code updated for new macOS version.
+
 * **[v0.6.3](https://github.com/mklement0/n-install/compare/v0.6.2...v0.6.3)** (2022-04-26):
   * [fix] Restored old shell-initialization file ID string, so as not to break existing installations.
 
