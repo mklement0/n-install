@@ -84,10 +84,10 @@ curl -sL https://bit.ly/n-install | bash -s -- -q
 ```
 
 * Automated installation to the default location, with subsequent installation of the latest LTS
-  (Long Term Support) version, and the latest 0.10.x release:
+  (Long Term Support) version, and the latest v22 release:
 
 ```shell
-curl -L https://bit.ly/n-install | bash -s -- -y lts 0.10
+curl -L https://bit.ly/n-install | bash -s -- -y lts 22
 ```
 
 * Automated installation to custom location `~/util/n`, with subsequent installation of the latest LTS Node.js version:
@@ -180,7 +180,7 @@ DESCRIPTION
 
   * lts    ... the LTS (long-term stability) version
   * latest ... the latest version available overall
-  * otherwise, specify an explicit version number, such as '0.12' or '0.10.35'
+  * otherwise, specify an explicit version number, such as '22' or '22.13'
   
   If multiple versions are specified, the first one will be made active.
 
@@ -309,6 +309,10 @@ This project gratefully depends on the following open-source components, accordi
 Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
+
+* **[v0.6.5](https://github.com/mklement0/n-install/compare/v0.6.4...v0.6.5)** (2025-02-09):
+  * [enhancement] Versions to install may now be specified as major version numbers only, e.g. `22`
+  * [enhancement] Interactive prompt is now less verbose in that opt-outs aren't explicitly mentioned.
 
 * **[v0.6.4](https://github.com/mklement0/n-install/compare/v0.6.3...v0.6.4)** (2025-01-23):
   * [fix] SHA-256 checksum-utility command-line construction code updated for new macOS version.

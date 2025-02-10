@@ -2,7 +2,7 @@
   "name": "n-install",
   "description": "installs n, the Node.js version manager, without needing to install Node.js first",
   "private": true,
-  "version": "0.6.4",
+  "version": "0.6.5",
   "os": [
     "darwin",
     "linux"

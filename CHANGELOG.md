@@ -4,6 +4,10 @@ Versioning complies with [semantic versioning (semver)](http://semver.org/).
 
 <!-- NOTE: An entry template for a new version is automatically added each time `make version` is called. Fill in changes afterwards. -->
 
+* **[v0.6.5](https://github.com/mklement0/n-install/compare/v0.6.4...v0.6.5)** (2025-02-09):
+  * [enhancement] Versions to install may now be specified as major version numbers only, e.g. `22`
+  * [enhancement] Interactive prompt is now less verbose in that opt-outs aren't explicitly mentioned.
+
 * **[v0.6.4](https://github.com/mklement0/n-install/compare/v0.6.3...v0.6.4)** (2025-01-23):
   * [fix] SHA-256 checksum-utility command-line construction code updated for new macOS version.
 
